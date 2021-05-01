@@ -1,0 +1,9 @@
+**/._*
+**/.vscode
+**/.DS_Store
+**/__pycache__
+**/**.pyc
+**/.env
+**/servers
+bot_token.txt
+bot_tokens.txt
