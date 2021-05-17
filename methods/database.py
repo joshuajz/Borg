@@ -2,12 +2,13 @@ import sqlite3
 import os
 from shutil import copyfile
 import discord
+from typing import Dict
 
 SERVERS_DIR = f"{os.getcwd()}/servers"
 DEFAULT_DIR = os.getcwd()
 
 
-async def create_filesystem(client: discord.Client):
+async def check_filesystem(client: discord.Client):
     """Creates the filesystem"""
 
     # Check to see if there is a "servers" directory
@@ -34,43 +35,49 @@ async def create_filesystem(client: discord.Client):
             db_conn = sqlite3.connect(f"{SERVERS_DIR}/{guild}/database.db")
             db = db_conn.cursor()
 
-            db_commands = [
-                "CREATE TABLE reaction_roles ([role_id] int, [message_id] int, [reaction_id] int, [channel_id] int)",
-                "CREATE TABLE normal_roles (role_id int, command text)",
-                "CREATE TABLE custom_commands (command text, output text, image text)",
-                "CREATE TABLE programs (user_id int, description text)",
-                "CREATE TABLE welcome (channel int, message text, enabled bool)",
-                """CREATE TABLE "infractions" (
-                "id"	INTEGER NOT NULL DEFAULT 0 PRIMARY KEY AUTOINCREMENT,
-                "datetime"	TEXT,
-                "length"	TEXT,
-                "type"	TEXT,
-                "user_id"	INTEGER,
-                "moderator_id"	INTEGER,
-                "reason"	TEXT,
-                "active"    BOOL)""",
-                "CREATE TABLE settings (programs_channel text)",
-            ]
+            await create_database({"db": db, "con": db_conn})
 
-            for command in db_commands:
-                db.execute(command)
 
-            db.execute(
-                "INSERT INTO welcome VALUES (?, ?, ?)",
-                (
-                    None,
-                    None,
-                    False,
-                ),
-            )
-            db.execute("INSERT INTO settings VALUES (?)", (None,))
+async def create_database(db: dict) -> bool:
+    db_commands = [
+        "CREATE TABLE reaction_roles ([role_id] int, [message_id] int, [reaction_id] int, [channel_id] int)",
+        "CREATE TABLE normal_roles (role_id int, command text)",
+        "CREATE TABLE custom_commands (command text, output text, image text)",
+        "CREATE TABLE programs (user_id int, description text)",
+        "CREATE TABLE welcome (channel int, message text, enabled bool)",
+        """CREATE TABLE "infractions" (
+        "id"	INTEGER NOT NULL DEFAULT 0 PRIMARY KEY AUTOINCREMENT,
+        "datetime"	TEXT,
+        "length"	TEXT,
+        "type"	TEXT,
+        "user_id"	INTEGER,
+        "moderator_id"	INTEGER,
+        "reason"	TEXT,
+        "active"    BOOL)""",
+        "CREATE TABLE settings (programs_channel text)",
+    ]
 
-            db_conn.commit()
+    for command in db_commands:
+        db["db"].execute(command)
+
+    db["db"].execute(
+        "INSERT INTO welcome VALUES (?, ?, ?)",
+        (
+            None,
+            None,
+            False,
+        ),
+    )
+    db["db"].execute("INSERT INTO settings VALUES (?)", (None,))
+
+    db["con"].commit()
+
+    return True
 
 
 async def database_connection(
     guild: int,
-) -> {"con": sqlite3.Connection, "db": sqlite3.Cursor}:
+) -> dict:
     """Creates a database connection with a guild id"""
 
     db_connection = sqlite3.connect(f"{SERVERS_DIR}/{guild}/database.db")
