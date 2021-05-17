@@ -110,6 +110,8 @@ async def custom_command_add(ctx, name: str, description: str, image: str or Non
 
 
 async def custom_command_remove(ctx, command: str) -> list:
+    """Removes a custom command from that server's database"""
+
     # Permissions check
     if ctx.author.guild_permissions.administrator != True:
         return [False, "You do not have permission to create commands."]
@@ -143,6 +145,8 @@ async def custom_command_remove(ctx, command: str) -> list:
 
 
 async def custom_command_handling(ctx, command: str):
+    """Handling for custom commands -> Calls the commands"""
+
     db = await database_connection(ctx.guild.id)
 
     # List of commands

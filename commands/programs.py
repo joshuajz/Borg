@@ -3,9 +3,7 @@ from methods.database import database_connection
 from embed import create_embed, add_field
 
 
-async def programs_add(
-    ctx, client, programs: str, user=None
-) -> [bool, str, str or None]:
+async def programs_add(ctx, client, programs: str, user=None) -> list:
     """Creates a request to add programs for a user"""
 
     db = await database_connection(ctx.guild.id)
@@ -69,7 +67,7 @@ async def programs_add(
     return [True, "Programs successfully sent to Moderators.", programs_msg]
 
 
-async def programs_remove(ctx, programs: str, user=None) -> [bool, str]:
+async def programs_remove(ctx, programs: str, user=None) -> list:
     """Allows a user to remove programs"""
 
     # Determines the user id
