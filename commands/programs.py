@@ -1,6 +1,7 @@
 import discord
 from methods.database import database_connection
-from embed import create_embed, add_field
+from methods.embed import create_embed, add_field
+from methods.user import find_user
 
 
 async def programs_add(ctx, client, programs: str, user=None) -> list:
@@ -132,3 +133,106 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
     )
 
     return [True, "Programs Removed Successfully.", description]
+
+
+async def programs_edit(ctx, client, user, before, after):
+    """Edits a user's specific program"""
+
+    # Check
+    if user is None:
+        return [False, "Invalid Arguments (user was Null)."]
+
+    if before is None or after is None:
+        return [False, "Invalid Arguments (before or after)."]
+
+    try:
+        before = int(before)
+    except:
+        return [False, "Invalid 'before' value (ie. not a number)."]
+
+    user = find_user(user)
+
+    db = await databse_connection(ctx.guild.id)
+
+    # Channel for verification
+    programs_channel = (
+        db["db"].execute("SELECT programs_channel FROM settings").fetchone()[0]
+    )
+
+    if programs_channel is None:
+        return [
+            False,
+            "The admins haven't created a programs channel.  Have an admin run /programs setup.",
+        ]
+
+    programs = (
+        db["db"]
+        .execute("SELECT * FROM programs WHERE user_id = (?)", (user,))
+        .fetchone()
+    )
+
+    p = {}
+    i = 1
+    for program in programs:
+        p[i] = program
+        i += 1
+
+    if before not in p.keys():
+        return [False, "You do not have a program with that numerical value."]
+
+    embed = create_embed("Programs (Edit) Verification Required", "", "magenta")
+    add_field(embed, "Before", p[before], True)
+    add_field(embed, "After", after, True)
+
+    verify_channel = client.get_channel(programs_channel)
+    verify_msg = await verify_channel.send(embed=embed)
+
+    for emoji in ["✅", "❌"]:
+        await verify_msg.add_reaction(emoji)
+
+    return [True, "Programs successfully sent to the Moderators.", embed]
+
+
+async def programs(ctx, user: str) -> list:
+    """Display's a user's programs"""
+
+    # Check
+    if user is None:
+        return [False, "Invalid Arguments (user was Null)."]
+
+    # Gets the user's id
+    user = find_user(user)
+
+    db = await database_connection(ctx.guild.id)
+
+    # Grabs all of the programs
+    programs_list = (
+        db["db"]
+        .execute("SELECT * FROM programs WHERE user_id = (?)", (user,))
+        .fetchone()
+    )
+
+    # Empty list
+    if programs_list is None:
+        return [
+            False,
+            "That user doesn't have any programs.  That user needs to use /programs add",
+        ]
+
+    programs_list = programs_list.split("\n")
+
+    # Creates the message
+    message = ""
+    space_amount = (len(programs_list) // 10) + 1
+    for i in range(len(programs_list)):
+        if programs_list[i] != "" and programs_list[i] is not None:
+            # Ensure the numbers line up
+            number = f"{i + 1}".rjust(space_amount, "")
+            # Only add a newline if it's required
+            message += (
+                f"{number}. {programs_list[i]}" + "\n"
+                if i != (len(programs_list) - 1)
+                else ""
+            )
+
+    return [True, message]
