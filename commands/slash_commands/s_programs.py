@@ -110,8 +110,11 @@ class Slash_Programs(commands.Cog):
         result = await programs(ctx, user.id)
 
         if result[0] == True:
-            embed = create_embed(f"{user.mention}'s Programs", result[1], True)
-            await ctx.send(embed)
+
+            embed = create_embed(
+                f"{user.name}#{user.discriminator}'s Programs", result[1], "orange"
+            )
+            await ctx.send(embed=embed)
         else:
             await ctx.send(result[1])
 

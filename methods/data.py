@@ -8,7 +8,11 @@ def parse_user(data: str) -> int:
     if type(data) == int:
         return data
 
-    data = data.strip()
+    try:
+        data = data.strip()
+    except:
+        return False
+
     if data.isnumeric() and len(data) == 18:
         # User ID is given
         user_id = int(data)
@@ -28,7 +32,11 @@ def parse_channel(data: str) -> int:
     if type(data) == int:
         return data
 
-    data = data.strip()
+    try:
+        data = data.strip()
+    except:
+        return False
+
     if data.isnumeric() and len(data) == 18:
         user_id = int(data)
     elif data[0:2] == "<#":
@@ -39,7 +47,7 @@ def parse_channel(data: str) -> int:
     return user_id
 
 
-def find_channel(ctx, channel) -> Union[int, list]:
+def find_channel(ctx, channel: str) -> Union[int, list]:
     """Finds a channel given it's name."""
 
     channel_id = [i.id for i in ctx.guild.channels if i.name == channel]

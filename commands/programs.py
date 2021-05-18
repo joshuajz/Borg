@@ -199,7 +199,7 @@ async def programs(ctx, user: str) -> list:
             "That user doesn't have any programs.  That user needs to use /programs add",
         ]
 
-    programs_list = programs_list.split("\n")
+    programs_list = programs_list[1].split("\n")
 
     # Creates the message
     message = ""
@@ -207,14 +207,12 @@ async def programs(ctx, user: str) -> list:
     for i in range(len(programs_list)):
         if programs_list[i] != "" and programs_list[i] is not None:
             # Ensure the numbers line up
-            number = f"{i + 1}".rjust(space_amount, "")
+            number = f"{i + 1}".rjust(space_amount, " ")
             # Only add a newline if it's required
-            message += (
-                f"{number}. {programs_list[i]}" + "\n"
-                if i != (len(programs_list) - 1)
-                else ""
+            message += f"{number}. {programs_list[i]}" + (
+                "\n" if i != (len(programs_list) - 1) else ""
             )
-
+    print(message)
     return [True, message]
 
 
@@ -271,7 +269,7 @@ async def programs_reaction_handling(ctx, client):
             await m.delete()
             return True
         elif ctx.emoji.name == "✅":
-            user_id = parse_user(m.embeds.fields[0].value)
+            user_id = parse_user(embeds.fields[0].value)
 
             if not user_id:
                 return True
@@ -285,7 +283,7 @@ async def programs_reaction_handling(ctx, client):
                 .fetchone()[0]
                 != 1
             ):
-                programs = m.embeds.fields[2].value
+                programs = embeds.fields[1].value
                 await m.delete()
 
                 if not programs:
@@ -297,7 +295,7 @@ async def programs_reaction_handling(ctx, client):
                 )
                 db["con"].commit()
             else:
-                program_additions = m.embeds.fields[2].value
+                program_additions = embeds.fields[1].value
                 await m.delete()
 
                 if not program_additions:
@@ -349,14 +347,14 @@ async def programs_reaction_handling(ctx, client):
             await m.delete()
             return True
         elif ctx.emoji.name == "✅":
-            user_id = parse_user(m.embeds.fields[0].value)
+            user_id = parse_user(embeds.fields[0].value)
 
             if not user_id:
                 await m.delete()
                 return True
 
-            programs_newmsg = m.embeds.fields[1].value
-            program_change = m.embeds.fields[2].value
+            programs_newmsg = embeds.fields[1].value
+            program_change = embeds.fields[2].value
 
             await m.delete()
 
