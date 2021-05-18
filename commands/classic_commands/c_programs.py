@@ -20,6 +20,7 @@ class Classic_Programs(commands.Cog):
 
         p = await programs(ctx, user_id)
 
+        # Successfully grabbed programs
         if p[0] == True:
             user = self.bot.get_user(user_id)
             embed = create_embed(
@@ -27,6 +28,7 @@ class Classic_Programs(commands.Cog):
             )
             await ctx.send(embed=embed)
         else:
+            # Return the error
             await ctx.send(p[1])
 
 

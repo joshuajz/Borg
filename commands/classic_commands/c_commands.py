@@ -14,7 +14,10 @@ class Classic_Custom_Commands(commands.Cog):
 
     @commands.command(name="commands")
     async def _commands(self, ctx):
+
         commands = await custom_command_list(ctx)
+
+        # Returns the message
         if commands[0]:
             embed = create_embed("Commands", commands[1], "orange")
             await ctx.channel.send(embed=embed)

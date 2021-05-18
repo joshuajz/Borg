@@ -65,6 +65,8 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
     else:
         user_id = ctx.author.id
 
+    db = await database_connection(ctx.guild_id)
+
     # Deletes ALL the programs
     if ["*", "all"] in programs.lower():
         db["db"].execute("DELETE FROM programs WHERE user_id = (?)", (user_id,))
@@ -79,12 +81,12 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
 
     # Removes duplicates
     remove_programs = list(dict.fromkeys(remove_programs))
-
     try:
         remove_programs = [int(i) for i in remove_programs]
     except:
         return [False, "Invalid Removal Value(s) provided."]
 
+    # All programs
     all_programs = {}
     i = 1
     for program in db["db"].execute(
@@ -94,6 +96,7 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
         all_programs[i] = program
         i += 1
 
+    # New list w/o removals
     new_programs = [
         val for key, val in all_programs.items() if key not in remove_programs
     ]
@@ -102,11 +105,7 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
     message = ""
     len_programs = len(new_programs)
     for program in range(len_programs):
-        message += (
-            new_programs[program] + "\n"
-            if program != len_programs - 1
-            else add_programs[program]
-        )
+        message += new_programs[program] + ("\n" if program != len_programs - 1 else "")
 
     db["db"].execute(
         "UPDATE programs SET description = (?) WHERE user_id = (?)", (message, user_id)
@@ -118,10 +117,11 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
 async def programs_edit(ctx, client, user, before, after):
     """Edits a user's specific program"""
 
-    # Check
+    # Check user
     if user is None:
         return [False, "Invalid Arguments (user was Null)."]
 
+    # Check before and after
     if before is None or after is None:
         return [False, "Invalid Arguments (before or after)."]
 
@@ -132,13 +132,14 @@ async def programs_edit(ctx, client, user, before, after):
 
     user = parse_user(user)
 
-    db = await databse_connection(ctx.guild.id)
+    db = await database_connection(ctx.guild.id)
 
     # Channel for verification
     programs_channel = (
         db["db"].execute("SELECT programs_channel FROM settings").fetchone()[0]
     )
 
+    # Check
     if programs_channel is None:
         return [
             False,
@@ -151,6 +152,7 @@ async def programs_edit(ctx, client, user, before, after):
         .fetchone()
     )
 
+    # Entire programs list
     p = {}
     i = 1
     for program in programs:
@@ -160,6 +162,7 @@ async def programs_edit(ctx, client, user, before, after):
     if before not in p.keys():
         return [False, "You do not have a program with that numerical value."]
 
+    # Create a verification Embed
     embed = create_embed("Programs (Edit) Verification Required", "", "magenta")
     add_field(embed, "Before", p[before], True)
     add_field(embed, "After", after, True)
@@ -167,6 +170,7 @@ async def programs_edit(ctx, client, user, before, after):
     verify_channel = client.get_channel(programs_channel)
     verify_msg = await verify_channel.send(embed=embed)
 
+    # Add emojis
     for emoji in ["✅", "❌"]:
         await verify_msg.add_reaction(emoji)
 
@@ -243,6 +247,7 @@ async def programs_reaction_handling(ctx, client):
         db["db"].execute("SELECT programs_channel FROM settings").fetchone()[0]
     )
 
+    # No mod channel
     if mod_channel_id is None:
         return False
 
@@ -251,11 +256,13 @@ async def programs_reaction_handling(ctx, client):
     if mod_channel_id != ctx.channel_id:
         return False
 
+    # Grabs the message & embeds
     m = await client.get_channel(ctx.channel_id).fetch_message(ctx.message_id)
     embeds = m.embeds[0]
 
     reactions = m.reactions
 
+    # Checks to ensure no one else has already added the reactions
     if not (
         (reactions[0].count == 1 and reactions[1].count == 2)
         or (reactions[0].count == 2 and reactions[1].count == 1)
@@ -266,6 +273,7 @@ async def programs_reaction_handling(ctx, client):
     # Deals with programs
     if m.embeds[0].title == "Programs Verification Required":
         if ctx.emoji.name == "❌":
+            # Delete
             await m.delete()
             return True
         elif ctx.emoji.name == "✅":
@@ -274,6 +282,9 @@ async def programs_reaction_handling(ctx, client):
             if not user_id:
                 return True
 
+            # Checks to see if the user already has a programs list
+
+            # If they don't
             if (
                 db["db"]
                 .execute(
@@ -283,24 +294,29 @@ async def programs_reaction_handling(ctx, client):
                 .fetchone()[0]
                 != 1
             ):
+                # Delete the message
                 programs = embeds.fields[1].value
                 await m.delete()
 
                 if not programs:
                     return False
 
+                # Add the programs
                 db["db"].execute(
                     "INSERT INTO programs (user_id, description) VALUES (?, ?)",
                     (user_id, programs),
                 )
                 db["con"].commit()
+            # If they do
             else:
+                # Delete the message
                 program_additions = embeds.fields[1].value
                 await m.delete()
 
                 if not program_additions:
                     return False
 
+                # Grabs the current programs
                 current_programs = (
                     db["db"]
                     .execute(
@@ -312,6 +328,7 @@ async def programs_reaction_handling(ctx, client):
 
                 current_programs += "\n"
 
+                # Adds the additions
                 len_program_additions = len(program_additions)
 
                 for program in len_program_additions:
@@ -319,18 +336,21 @@ async def programs_reaction_handling(ctx, client):
                         "\n" if program + 1 != len_program_additions else ""
                     )
 
+                # Updates the database to the newer longer version
                 db["db"].execute(
                     "UPDATE programs SET description = ? WHERE user_id = ?",
                     (current_programs, user_id),
                 )
                 db["con"].commit()
 
+                # Grabs the user & makes a DM channel
                 user = client.get_user(user_id)
                 dm_channel = user.dm_channel
                 if dm_channel is None:
                     await user.create_dm()
                     dm_channel = user.dm_channel
 
+                # Sends an embed w/ the new programs
                 embed = create_embed(
                     "!Programs Command Created Successfully", "", "light_green"
                 )
@@ -344,23 +364,29 @@ async def programs_reaction_handling(ctx, client):
                 return True
     elif m.embeds[0].title == "Programs Edit Verification Required":
         if ctx.emoji.name == "❌":
+            # Delete
             await m.delete()
             return True
         elif ctx.emoji.name == "✅":
+            # User
             user_id = parse_user(embeds.fields[0].value)
 
             if not user_id:
                 await m.delete()
                 return True
 
+            # New addition & Current
             programs_newmsg = embeds.fields[1].value
             program_change = embeds.fields[2].value
 
+            # Delete
             await m.delete()
 
+            # Invalid
             if not programs_newmsg or not program_change:
                 return True
 
+            # Grabs current programs
             current_programs = (
                 db["db"]
                 .execute(
@@ -370,6 +396,7 @@ async def programs_reaction_handling(ctx, client):
                 .fetchone()
             )[0]
 
+            # All programs into a dictionary
             programs = {}
             i = 1
             for p in current_programs.split("\n"):
@@ -379,24 +406,28 @@ async def programs_reaction_handling(ctx, client):
                     programs[i] = p
                 i += 1
 
+            # Creates a message w/ the programs
             final_programs = ""
             p_values = programs.values()
             len_p_values = len(p_values)
             for i in range(len_p_values):
                 final_programs += p_values[i] + ("\n" if i + 1 != len_p_values else "")
 
+            # Update in the databse
             db["db"].execute(
                 "UPDATE programs SET description = ? WHERE user_id = ?",
                 (final_programs, user_id),
             )
             db["con"].commit()
 
+            # Open a DM
             user = client.get_user(user_id)
             dm_channel = user.dm_channel
             if dm_channel is None:
                 await user.create_dm()
                 dm_channel = user.dm_channel
 
+            # Send a status message
             embed = create_embed("!Programs Edit Was Successful", "", "light_green")
             add_field(embed, "Programs", final_programs, True)
 
