@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from discord.ext import commands
 from discord_slash import SlashCommand
 from commands.commands import custom_command_handling
+from commands.programs import programs_reaction_handling
 
 load_dotenv()
 
@@ -15,7 +16,7 @@ intents.members = True
 intents.reactions = True
 
 
-slash_cogs = ("s_commands",)
+slash_cogs = ("s_commands", "s_programs")
 classic_cogs = ("c_commands",)
 
 # Bot Instance
@@ -60,7 +61,7 @@ async def on_raw_reaction_add(ctx):
     if ctx.member.bot:
         return
 
-    if await program_reaction_handling(ctx, bot) == True:
+    if await programs_reaction_handling(ctx, bot) == True:
         return
 
 
