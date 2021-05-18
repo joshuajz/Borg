@@ -3,7 +3,13 @@ from discord.ext import commands
 from discord_slash import cog_ext, SlashContext
 from discord_slash.utils.manage_commands import create_option
 from methods.data import parse_channel
-from commands.programs import programs_add, programs_setup, programs, programs_edit
+from commands.programs import (
+    programs_add,
+    programs_setup,
+    programs,
+    programs_edit,
+    programs_remove,
+)
 from methods.embed import create_embed
 
 
@@ -149,11 +155,45 @@ class Slash_Programs(commands.Cog):
             user = ctx.author.id
 
         result = await programs_edit(ctx, self.bot, user, program_num, new_text)
-        print(user, program_num, new_text)
+
         if result[0]:
             embed = result[2]
             embed.title = "Program Edit sent to Moderators"
             await ctx.send(embed=result[2], hidden=True)
+        else:
+            await ctx.send(result[1], hidden=True)
+
+    @cog_ext.cog_subcommand(
+        base="programs",
+        name="remove",
+        description="Allows you to remove programs.",
+        guild_ids=guilds,
+        options=[
+            create_option(
+                name="removal",
+                description="* Removes all or a comma sepearted list with the values to remove.  ie. * or 1, 2, 3",
+                option_type=3,
+                required=True,
+            ),
+            create_option(
+                name="user",
+                description="User's programs to remove.",
+                option_type=6,
+                required=False,
+            ),
+        ],
+    )
+    async def _programs_remove(self, ctx, removal, user=None):
+        if user == None:
+            user = ctx.author.id
+        else:
+            user = user.id
+
+        result = await programs_remove(ctx, removal, user)
+
+        if result[0]:
+            embed = create_embed(result[1], "", "orange")
+            await ctx.send(embed=embed, hidden=True)
         else:
             await ctx.send(result[1], hidden=True)
 

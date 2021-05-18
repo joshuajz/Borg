@@ -67,6 +67,7 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
 
     db = await database_connection(ctx.guild_id)
 
+    #!
     # Deletes ALL the programs
     if ["*", "all"] in programs.lower():
         db["db"].execute("DELETE FROM programs WHERE user_id = (?)", (user_id,))
