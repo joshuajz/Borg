@@ -24,16 +24,7 @@ class Slash_Custom_Commands(commands.Cog):
         guild_ids=guilds,
     )
     async def _command_list(self, ctx):
-        command_list = await custom_command_list(ctx)
-
-        if command_list[0] == True:
-            embed = create_embed("Commands", command_list[1], "orange")
-
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send(
-                "This server has no commands.  Ask an admin to run `/command add`."
-            )
+        await custom_command_list(self.bot, ctx)
 
     @cog_ext.cog_subcommand(
         base="command",
