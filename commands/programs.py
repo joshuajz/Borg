@@ -111,7 +111,7 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
         "UPDATE programs SET description = (?) WHERE user_id = (?)", (message, user_id)
     )
 
-    return [True, "Programs Removed Successfully.", description]
+    return [True, "Programs Removed Successfully.", message]
 
 
 async def programs_edit(ctx, client, user, before, after):
@@ -149,14 +149,14 @@ async def programs_edit(ctx, client, user, before, after):
     programs = (
         db["db"]
         .execute("SELECT * FROM programs WHERE user_id = (?)", (user,))
-        .fetchone()
+        .fetchall()
     )
 
     # Entire programs list
     p = {}
     i = 1
     for program in programs:
-        p[i] = program
+        p[i] = program[1]
         i += 1
 
     if before not in p.keys():
@@ -167,7 +167,7 @@ async def programs_edit(ctx, client, user, before, after):
     add_field(embed, "Before", p[before], True)
     add_field(embed, "After", after, True)
 
-    verify_channel = client.get_channel(programs_channel)
+    verify_channel = client.get_channel(int(programs_channel))
     verify_msg = await verify_channel.send(embed=embed)
 
     # Add emojis
@@ -310,7 +310,7 @@ async def programs_reaction_handling(ctx, client):
             # If they do
             else:
                 # Delete the message
-                program_additions = embeds.fields[1].value
+                program_additions = embeds.fields[1].value.split("\n")
                 await m.delete()
 
                 if not program_additions:
@@ -331,7 +331,7 @@ async def programs_reaction_handling(ctx, client):
                 # Adds the additions
                 len_program_additions = len(program_additions)
 
-                for program in len_program_additions:
+                for program in range(len_program_additions):
                     current_programs += program_additions[program] + (
                         "\n" if program + 1 != len_program_additions else ""
                     )
@@ -362,7 +362,7 @@ async def programs_reaction_handling(ctx, client):
                     return True
 
                 return True
-    elif m.embeds[0].title == "Programs Edit Verification Required":
+    elif m.embeds[0].title == "Programs (Edit) Verification Required":
         if ctx.emoji.name == "❌":
             # Delete
             await m.delete()
@@ -376,8 +376,8 @@ async def programs_reaction_handling(ctx, client):
                 return True
 
             # New addition & Current
-            programs_newmsg = embeds.fields[1].value
-            program_change = embeds.fields[2].value
+            programs_newmsg = embeds.fields[0].value
+            program_change = embeds.fields[1].value
 
             # Delete
             await m.delete()
@@ -400,7 +400,7 @@ async def programs_reaction_handling(ctx, client):
             programs = {}
             i = 1
             for p in current_programs.split("\n"):
-                if programs[i] == program_change:
+                if p == program_change:
                     programs[i] = programs_newmsg
                 else:
                     programs[i] = p
@@ -408,7 +408,7 @@ async def programs_reaction_handling(ctx, client):
 
             # Creates a message w/ the programs
             final_programs = ""
-            p_values = programs.values()
+            p_values = list(programs.values())
             len_p_values = len(p_values)
             for i in range(len_p_values):
                 final_programs += p_values[i] + ("\n" if i + 1 != len_p_values else "")

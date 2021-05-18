@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord_slash import cog_ext, SlashContext
 from discord_slash.utils.manage_commands import create_option
 from methods.data import parse_channel
-from commands.programs import programs_add, programs_setup, programs
+from commands.programs import programs_add, programs_setup, programs, programs_edit
 from methods.embed import create_embed
 
 
@@ -117,6 +117,45 @@ class Slash_Programs(commands.Cog):
             await ctx.send(embed=embed)
         else:
             await ctx.send(result[1])
+
+    @cog_ext.cog_subcommand(
+        base="programs",
+        name="edit",
+        description="Allows you to edit programs.",
+        guild_ids=guilds,
+        options=[
+            create_option(
+                name="program_num",
+                description="The # of the program you would like to edit.",
+                option_type=3,
+                required=True,
+            ),
+            create_option(
+                name="new_text",
+                description="The new text to replace the old program.",
+                option_type=3,
+                required=True,
+            ),
+            create_option(
+                name="user",
+                description="The user to edit.",
+                option_type=6,
+                required=False,
+            ),
+        ],
+    )
+    async def _programs_edit(self, ctx, program_num, new_text, user=None):
+        if user == None:
+            user = ctx.author.id
+
+        result = await programs_edit(ctx, self.bot, user, program_num, new_text)
+        print(user, program_num, new_text)
+        if result[0]:
+            embed = result[2]
+            embed.title = "Program Edit sent to Moderators"
+            await ctx.send(embed=result[2], hidden=True)
+        else:
+            await ctx.send(result[1], hidden=True)
 
 
 def setup(bot):
