@@ -16,7 +16,7 @@ intents.members = True
 intents.reactions = True
 
 
-slash_cogs = ("s_commands", "s_programs")
+slash_cogs = ("s_commands", "s_programs", "s_roles")
 classic_cogs = ("c_commands", "c_programs")
 
 # Bot Instance

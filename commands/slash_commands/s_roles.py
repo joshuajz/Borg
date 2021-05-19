@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord_slash import cog_ext, SlashContext
 from discord_slash.utils.manage_commands import create_option
-from commands.roles import role, roles, add_role, remove_role
+from commands.roles import role_toggle, roles, add_role, remove_role
 
 
 class Slash_Roles(commands.Cog):
@@ -26,7 +26,7 @@ class Slash_Roles(commands.Cog):
         ],
     )
     async def _roles_role(self, ctx, role):
-        await role(ctx, role)
+        await role_toggle(ctx, role.lower())
 
     @cog_ext.cog_subcommand(
         base="roles",
@@ -45,7 +45,7 @@ class Slash_Roles(commands.Cog):
         options=[
             create_option(
                 name="name",
-                description="The name of the role that users will use to add it.  ie. if you make name 'candy' than users will use !role candy.",
+                description="The name of the role that users will use to add it.  ie. !role name",
                 option_type=3,
                 required=True,
             ),
@@ -58,6 +58,21 @@ class Slash_Roles(commands.Cog):
         ],
     )
     async def _roles_add(self, ctx, name, role):
+        if not name[0].isalpha():
+            await ctx.send(
+                "Ensure the first letter of your role name is a letter of the alphabet!",
+                hidden=True,
+            )
+            return
+
+        if len(name.split(" ")) >= 2:
+            await ctx.send(
+                "You cannot have any spaces in the name of your command.", hidden=True
+            )
+            return
+
+        name = name.lower()
+
         await add_role(ctx, name, role.id)
 
     @cog_ext.cog_subcommand(
@@ -76,3 +91,7 @@ class Slash_Roles(commands.Cog):
     )
     async def _roles_remove(self, ctx, role):
         await remove_role(ctx, role.id)
+
+
+def setup(bot):
+    bot.add_cog(Slash_Roles(bot))

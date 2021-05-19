@@ -4,7 +4,7 @@ from methods.embed import create_embed, add_field
 from methods.paged_command import page_command
 
 
-async def role(ctx, role):
+async def role_toggle(ctx, role):
     """The !role {} command."""
 
     # Grab the user's roles
@@ -52,9 +52,15 @@ async def roles(ctx, bot):
     db = await database_connection(ctx.guild.id)
 
     all_roles = [
-        f"!{i[0]} - {ctx.guild.get_role(i[1]).mention}"
-        for i in db["db"].execute("SELECT * FROM normal_roles")
+        f"!role {i[1]} - {ctx.guild.get_role(i[0]).mention}"
+        for i in db["db"].execute("SELECT * FROM normal_roles").fetchall()
     ]
+
+    if len(all_roles) == 0:
+        await ctx.send(
+            "This server has no roles.  Have an administrator run /roles create."
+        )
+        return
 
     await page_command(ctx, bot, all_roles, "Roles")
 
