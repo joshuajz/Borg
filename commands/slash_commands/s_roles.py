@@ -9,13 +9,10 @@ class Slash_Roles(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    guilds = [749360498624954398]
-
     @cog_ext.cog_subcommand(
         base="roles",
         name="role",
         description="Allows a user to toggle a role.",
-        guild_ids=guilds,
         options=[
             create_option(
                 name="role",
@@ -37,7 +34,6 @@ class Slash_Roles(commands.Cog):
         base="roles",
         name="list",
         description="Lists all of this server's roles.",
-        guild_ids=guilds,
     )
     async def _roles_list(self, ctx):
         result = await roles(ctx, self.bot)
@@ -49,7 +45,6 @@ class Slash_Roles(commands.Cog):
         base="roles",
         name="create",
         description="Adds a role to this server's list of roles.",
-        guild_ids=guilds,
         options=[
             create_option(
                 name="name",
@@ -87,7 +82,6 @@ class Slash_Roles(commands.Cog):
         base="roles",
         name="remove",
         description="Allows a role to be removed from this server's list of roles.",
-        guild_ids=guilds,
         options=[
             create_option(
                 name="role",

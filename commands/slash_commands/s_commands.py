@@ -15,13 +15,10 @@ class Slash_Custom_Commands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    guilds = [749360498624954398]
-
     @cog_ext.cog_subcommand(
         base="command",
         name="list",
         description="Lists all of the server's custom commands.",
-        guild_ids=guilds,
     )
     async def _command_list(self, ctx):
         await custom_command_list(self.bot, ctx)
@@ -30,7 +27,6 @@ class Slash_Custom_Commands(commands.Cog):
         base="command",
         name="add",
         description="Adds a new command to the server (admin only).",
-        guild_ids=guilds,
         options=[
             create_option(
                 name="name",
@@ -61,7 +57,6 @@ class Slash_Custom_Commands(commands.Cog):
         base="command",
         name="remove",
         description="Removes a command from the server (admin only).",
-        guild_ids=guilds,
         options=[
             create_option(
                 name="name",
@@ -80,7 +75,6 @@ class Slash_Custom_Commands(commands.Cog):
         base="command",
         name="use",
         description="Calls one of the custom commands for the server.",
-        guild_ids=guilds,
         options=[
             create_option(
                 name="name",

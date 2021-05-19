@@ -17,13 +17,10 @@ class Slash_Programs(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    guilds = [749360498624954398]
-
     @cog_ext.cog_subcommand(
         base="programs",
         name="add",
         description="Adds programs to your programs command.",
-        guild_ids=guilds,
         options=[
             create_option(
                 name="programs",
@@ -71,7 +68,6 @@ class Slash_Programs(commands.Cog):
         base="programs",
         name="setup",
         description="Setup the moderation channel.",
-        guild_ids=guilds,
         options=[
             create_option(
                 name="channel",
@@ -102,7 +98,6 @@ class Slash_Programs(commands.Cog):
         base="programs",
         name="programs",
         description="Displays a user's programs.",
-        guild_ids=guilds,
         options=[
             create_option(
                 name="user",
@@ -128,7 +123,6 @@ class Slash_Programs(commands.Cog):
         base="programs",
         name="edit",
         description="Allows you to edit programs.",
-        guild_ids=guilds,
         options=[
             create_option(
                 name="program_num",
@@ -167,7 +161,6 @@ class Slash_Programs(commands.Cog):
         base="programs",
         name="remove",
         description="Allows you to remove programs.",
-        guild_ids=guilds,
         options=[
             create_option(
                 name="removal",

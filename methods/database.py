@@ -84,3 +84,24 @@ async def database_connection(
     db = db_connection.cursor()
 
     return {"con": db_connection, "db": db}
+
+
+async def create_filesystem(ctx):
+    """Creates a filesystem for the new server."""
+
+    guild = ctx.id
+
+    # Open the "servers" directory
+    os.chdir(SERVERS_DIR)
+
+    # List of directory
+    list_dir = os.listdir()
+
+    if str(guild) not in list_dir:
+        os.mkdir(str(guild))
+
+    # Creates a database file
+    db_conn = sqlite3.connect(f"{SERVERS_DIR}/{guild}/database.db")
+    db = db_conn.cursor()
+
+    await create_database({"db": db, "con": db_conn})

@@ -1,12 +1,13 @@
 import discord
 import os
 import traceback
-from methods.database import check_filesystem, database_connection
+from methods.database import check_filesystem, create_filesystem
 from dotenv import load_dotenv
 from discord.ext import commands
 from discord_slash import SlashCommand
 from commands.commands import custom_command_handling
 from commands.programs import programs_reaction_handling
+from commands.welcome import welcome_handling
 
 load_dotenv()
 
@@ -72,9 +73,7 @@ async def on_member_join(ctx):
 
 @bot.event
 async def on_guild_join(guild):
-    print("Temp")
-    #! Create Filesystem Function in database.db
-    await create_filesystem(bot)
+    await create_filesystem(guild)
 
 
 for cog in slash_cogs:
