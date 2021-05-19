@@ -25,7 +25,7 @@ async def welcome_handling(ctx, client):
     await channel.send(message.replace("{{USER}}", ctx.mention))
 
 
-async def welcome_setup(ctx, client, channel: int, description: str):
+async def welcome_setup(ctx, channel: int, description: str):
     """Sets up the welcome messages."""
     if ctx.author.guild_permissions.administrator != True:
         return
@@ -46,7 +46,7 @@ async def welcome_setup(ctx, client, channel: int, description: str):
     await ctx.channel.send(embed=embed, hidden=True)
 
 
-async def welcome_toggle(ctx, client):
+async def welcome_toggle(ctx):
     if ctx.author.guild_permissions.administrator != True:
         return
 
