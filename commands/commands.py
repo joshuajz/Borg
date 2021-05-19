@@ -38,66 +38,6 @@ async def custom_command_list(bot, ctx) -> list:
     return [True, message]
 
 
-async def custom_commands(ctx, bot, commands: list):
-    def check(reaction, user):
-        return user == ctx.author and str(reaction) in ["◀️", "▶️"]
-
-    commands.sort()
-
-    pages_lists = []
-    for i in range(0, len(commands), 20):
-        pages_lists.append(commands[i : i + 20])
-
-    if len(pages_lists) == 1:
-        l1, l2 = pages_lists[0][0:10], pages_lists[0][10::]
-        embed = create_embed("Commands", "", "orange")
-        add_field(embed, "List 1:", "\n".join(l1), True)
-        if l2:
-            add_field(embed, "List 2:", "\n".join(l2), True)
-        await ctx.send(embed=embed)
-        return
-
-    messages = {}
-    i = 1
-    for m in pages_lists:
-        embed = create_embed("Commands", "", "orange")
-        add_field(embed, "List 1:", "\n".join(m[0:10]), True)
-        if m[10::]:
-            add_field(embed, "List 2:", "\n".join(m[10::]), True)
-        messages[i] = embed
-        i += 1
-
-    msg = await ctx.send(embed=messages[1])
-    await msg.add_reaction("◀️")
-    await msg.add_reaction("▶️")
-
-    current_page = 1
-    amount_pages = len(messages)
-
-    while True:
-        try:
-            # Waiting for a reaction to be added
-            reaction, user = await bot.wait_for(
-                "reaction_add", timeout=60 * 2.5, check=check
-            )
-            print(current_page, amount_pages, reaction)
-            if current_page != amount_pages and str(reaction) == "▶️":
-                current_page += 1
-                await msg.edit(embed=messages[current_page])
-                await msg.remove_reaction(reaction, user)
-            elif current_page != 1 and str(reaction) == "◀️":
-                current_page -= 1
-                await msg.edit(embed=messages[current_page])
-                await msg.remove_reaction(reaction, user)
-            else:
-                await msg.remove_reaction(reaction, user)
-
-        except asyncio.TimeoutError:
-            # Timeout over
-            await msg.delete()
-            break
-
-
 async def custom_command_add(ctx, name: str, description: str, image: str or None):
     """Adds a command to the database."""
     name = name.lower()
