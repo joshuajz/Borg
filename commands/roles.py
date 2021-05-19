@@ -16,13 +16,13 @@ async def role_toggle(ctx, role):
     role_id = (
         db["db"]
         .execute("SELECT role_id FROM normal_roles WHERE command = (?)", (role,))
-        .fetchone()[0]
+        .fetchone()
     )
 
     if not role_id:
-        await ctx.send(
-            "Invalid Roles.  Use !roles to see all of the roles.", hidden=True
-        )
+        return [False, "Invalid Roles.  Use !roles to see all of the roles."]
+
+    role_id = role_id[0]
 
     actual_role = ctx.guild.get_role(role_id)
 
@@ -33,8 +33,8 @@ async def role_toggle(ctx, role):
         embed = create_embed(
             "Removed Role", f"You removed the {actual_role.mention} role.", "dark_blue"
         )
+        return [True, embed]
 
-        await ctx.send(embed=embed, hidden=True)
     else:
         # Remove the role
         await ctx.author.add_roles(actual_role)
@@ -42,8 +42,7 @@ async def role_toggle(ctx, role):
         embed = create_embed(
             "Added Role", f"You added the {actual_role.mention} role.", "light_green"
         )
-
-        await ctx.send(embed=embed, hidden=True)
+        return [True, embed]
 
 
 async def roles(ctx, bot):
@@ -57,12 +56,13 @@ async def roles(ctx, bot):
     ]
 
     if len(all_roles) == 0:
-        await ctx.send(
-            "This server has no roles.  Have an administrator run /roles create."
-        )
-        return
+        return [
+            False,
+            "This server has no roles.  Have an administrator run /roles create.",
+        ]
 
     await page_command(ctx, bot, all_roles, "Roles")
+    return True
 
 
 async def add_role(ctx, name: str, role_id: int):

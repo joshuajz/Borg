@@ -17,7 +17,7 @@ intents.reactions = True
 
 
 slash_cogs = ("s_commands", "s_programs", "s_roles")
-classic_cogs = ("c_commands", "c_programs")
+classic_cogs = ("c_commands", "c_programs", "c_roles")
 
 # Bot Instance
 bot = commands.Bot(command_prefix="!", intents=intents)

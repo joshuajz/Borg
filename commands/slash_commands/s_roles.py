@@ -26,7 +26,12 @@ class Slash_Roles(commands.Cog):
         ],
     )
     async def _roles_role(self, ctx, role):
-        await role_toggle(ctx, role.lower())
+        result = await role_toggle(ctx, role.lower())
+
+        if result[0] == False:
+            await ctx.send(result[1], hiddne=True)
+        else:
+            await ctx.send(embed=result[1], hidden=True)
 
     @cog_ext.cog_subcommand(
         base="roles",
@@ -35,7 +40,10 @@ class Slash_Roles(commands.Cog):
         guild_ids=guilds,
     )
     async def _roles_list(self, ctx):
-        await roles(ctx, self.bot)
+        result = await roles(ctx, self.bot)
+
+        if result != True:
+            await ctx.send(result[1], hidden=True)
 
     @cog_ext.cog_subcommand(
         base="roles",
