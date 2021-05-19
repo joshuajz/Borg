@@ -4,7 +4,7 @@ from urlextract import URLExtract
 from methods.database import database_connection
 from typing import List
 from methods.embed import create_embed, add_field
-from math import ceil
+from methods.paged_command import page_command
 
 
 async def custom_command_list(bot, ctx) -> list:
@@ -32,9 +32,9 @@ async def custom_command_list(bot, ctx) -> list:
             False,
             "There are currently no commands!  Ask an admin to use !create_command.",
         ]
-    #! Temp
-    print(message)
-    await custom_commands(ctx, bot, message.split("\n"))
+
+    await page_command(ctx, bot, message.split("\n"), "Commands")
+
     return [True, message]
 
 
