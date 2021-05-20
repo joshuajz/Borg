@@ -30,12 +30,12 @@ async def custom_command_list(bot, ctx) -> list:
     else:
         return [
             False,
-            "There are currently no commands!  Ask an admin to use !create_command.",
+            "There are currently no commands!  Ask an admin to use /commands create.",
         ]
 
     await page_command(ctx, bot, message.split("\n"), "Commands")
 
-    return [True, message]
+    return True
 
 
 async def custom_command_add(ctx, name: str, description: str, image: str or None):

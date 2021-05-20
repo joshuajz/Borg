@@ -21,7 +21,10 @@ class Slash_Custom_Commands(commands.Cog):
         description="Lists all of the server's custom commands.",
     )
     async def _command_list(self, ctx):
-        await custom_command_list(self.bot, ctx)
+        result = await custom_command_list(self.bot, ctx)
+
+        if result != True:
+            await ctx.send(result[1], hidden=True)
 
     @cog_ext.cog_subcommand(
         base="command",

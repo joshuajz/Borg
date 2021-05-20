@@ -14,7 +14,10 @@ class Classic_Custom_Commands(commands.Cog):
 
     @commands.command(name="commands")
     async def _commands(self, ctx):
-        await custom_command_list(self.bot, ctx)
+        result = await custom_command_list(self.bot, ctx)
+
+        if result != True:
+            await ctx.send(result[1])
 
 
 def setup(bot):
