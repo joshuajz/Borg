@@ -69,7 +69,7 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
 
     #!
     # Deletes ALL the programs
-    if ["*", "all"] in programs.lower():
+    if programs.lower() in ["*", "all"]:
         db["db"].execute("DELETE FROM programs WHERE user_id = (?)", (user_id,))
         db["con"].commit()
 
