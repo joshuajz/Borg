@@ -8,12 +8,9 @@ class Slash_Help(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    guilds = [749360498624954398]
-
     @cog_ext.cog_slash(
         name="help",
         description="Displays the help command.",
-        guild_ids=guilds,
     )
     async def _help(self, ctx):
         await help_command(ctx, self.bot)
