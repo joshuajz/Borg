@@ -37,7 +37,7 @@ async def on_ready():
 
 @bot.listen()
 async def on_message(ctx):
-    print(ctx.content)
+    print(f"{ctx.guild.name} - {ctx.author.name}: {ctx.content}")
 
     # Don't do anything with a bot's message
     if ctx.author == bot.user:
