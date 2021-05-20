@@ -18,11 +18,14 @@ intents.reactions = True
 
 
 slash_cogs = ("s_commands", "s_programs", "s_roles", "s_help")
-classic_cogs = ("c_commands", "c_programs", "c_roles")
+classic_cogs = ("c_commands", "c_programs", "c_roles", "c_help")
 
 # Bot Instance
 bot = commands.Bot(command_prefix="!", intents=intents)
 slash = SlashCommand(bot, sync_commands=True)
+
+# Remove the default bot command
+bot.remove_command("help")
 
 
 @bot.event
