@@ -28,7 +28,13 @@ async def role_toggle(ctx, role):
 
     if role_id in user_roles:
         # Add the role
-        await ctx.author.remove_roles(actual_role)
+        try:
+            await ctx.author.remove_roles(actual_role)
+        except:
+            return [
+                False,
+                "Borg doesn't have permission to add/remove that role.  Ensure Borg's role is **above** the role you're trying to toggle in the server settings (Contact an administrator).",
+            ]
 
         embed = create_embed(
             "Removed Role", f"You removed the {actual_role.mention} role.", "dark_blue"
@@ -37,7 +43,13 @@ async def role_toggle(ctx, role):
 
     else:
         # Remove the role
-        await ctx.author.add_roles(actual_role)
+        try:
+            await ctx.author.add_roles(actual_role)
+        except:
+            return [
+                False,
+                "Borg doesn't have permission to add/remove that role.  Ensure Borg's role is **above** the role you're trying to toggle in the server settings (Contact an administrator).",
+            ]
 
         embed = create_embed(
             "Added Role", f"You added the {actual_role.mention} role.", "light_green"
