@@ -12,22 +12,36 @@ bot.remove_command("help")
 
 
 @bot.command()
-async def broadcast(ctx, msg):
+async def broadcast(ctx):
     if ctx.author.id != 178543252637483009:
         return
 
+    msg = ctx.message.content.split("!broadcast")[1]
+
     embed = create_embed("Message from JZ", msg, "orange")
-    print(msg)
+
     for server in bot.guilds:
-        print(server)
-        for channel in server.channels:
-            print(channel)
-            try:
-                await channel.send(embed=embed)
-            except Exception:
-                continue
-            else:
-                break
+        channel_names = [channel.name for channel in server.channels]
+
+        if "general" in channel_names or "chat" in channel_names:
+            for channel in server.channels:
+                if channel.name == "chat" or channel.name == "general":
+                    try:
+                        await channel.send(embed=embed)
+                    except Exception:
+                        print("Didn't work.")
+                    else:
+                        break
+
+        else:
+            for channel in server.channels:
+                print(channel)
+                try:
+                    await channel.send(embed=embed)
+                except Exception:
+                    continue
+                else:
+                    break
 
 
-bot.run(os.environ.get("bot_token"))
+bot.run(os.environ.get("broadcast_token"))
