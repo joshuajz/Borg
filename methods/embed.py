@@ -11,18 +11,20 @@ class embedColours(enum.Enum):
     light_green = 0x1DBF38
     dark_blue = 0x1D58BF
     magenta = 0xA832A4
+    cyan = 0x28C0D4
 
 
 def create_embed(
-    title: str, description: str, colour: str, footer="contact"
+    title: str, description: str, colour: str, footer="contact", thumbnail=None
 ) -> discord.Embed:
+    """Creates an Embed Object"""
+
     message = discord.Embed(
         title=title,
         description=description,
         colour=embedColours[colour].value,
         timestamp=datetime.datetime.utcnow(),
     )
-    """Creates an Embed Object"""
 
     if footer == "contact":
         message.set_footer(text="Contact JZ#7252 with concerns.")

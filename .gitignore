@@ -5,5 +5,9 @@
 **/**.pyc
 **/.env
 **/servers
+**/.venv
 bot_token.txt
 bot_tokens.txt
+todo.txt
+tokens.txt
+database.db

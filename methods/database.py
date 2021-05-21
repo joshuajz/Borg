@@ -4,8 +4,8 @@ from shutil import copyfile
 import discord
 from typing import Dict
 
-SERVERS_DIR = f"{os.getcwd()}/servers"
 DEFAULT_DIR = os.getcwd()
+SERVERS_DIR = f"{os.getcwd()}/servers"
 
 
 async def check_filesystem(client: discord.Client):
