@@ -9,12 +9,9 @@ class Slash_Help(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    guilds = [749360498624954398, 828677776004349962]
-
     @cog_ext.cog_slash(
         name="course",
         description="Displays information about a course.",
-        guild_ids=guilds,
         options=[
             create_option(
                 name="course",
