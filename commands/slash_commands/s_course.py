@@ -34,8 +34,9 @@ class Slash_Help(commands.Cog):
                     dash = True
                 else:
                     final += i
+            course = final
 
-        result = await pull_course(final, "queens")
+        result = await pull_course(course, "queens")
 
         if result[0] == True:
             await ctx.send(embed=result[1])
