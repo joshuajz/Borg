@@ -44,7 +44,7 @@ async def pull_course(course_code: str, school: str):
             images = pull_json()
             embed = create_embed(f"**{course[0]}**", f"{course[4]}", "cyan")
             embed.set_thumbnail(url=images["queens"])
-            add_field(embed, "Requirements", course[5].replace(".", ".\n"), False)
+            add_field(embed, "Requirements", course[5].replace(". ", ".\n"), False)
             add_field(embed, "Academic Level", course[6], True)
             add_field(embed, "Units", course[7], True)
 
@@ -56,5 +56,5 @@ def pull_json():
         f"{os.path.dirname(os.path.dirname(__file__))}/courses/icons/uploaded_icons.json"
     ) as f:
         data = json.load(f)
-    print(data)
+
     return data
