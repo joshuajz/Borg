@@ -48,7 +48,7 @@ async def pull_course(course_code: str, school: str):
 
             requirements = course[5]
             if requirements is None or requirements == "":
-                requirements = "No requirements."
+                requirements = "Unknown/No requirements.  Check the Queens website for more information."
 
             add_field(embed, "Requirements", requirements.replace(". ", ".\n"), False)
             add_field(embed, "Academic Level", course[6], True)

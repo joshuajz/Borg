@@ -35,9 +35,9 @@ class Slash_Help(commands.Cog):
                 else:
                     final += i
             course = final
-        print(course)
+
         result = await pull_course(course, "queens")
-        print(result)
+
         if result[0] == True:
             await ctx.send(embed=result[1])
         else:
