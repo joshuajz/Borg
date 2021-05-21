@@ -41,10 +41,16 @@ async def pull_course(course_code: str, school: str):
             ]
         else:
             course = course[0]
+
             images = pull_json()
             embed = create_embed(f"**{course[0]}**", f"{course[4]}", "cyan")
             embed.set_thumbnail(url=images["queens"])
-            add_field(embed, "Requirements", course[5].replace(". ", ".\n"), False)
+
+            requirements = course[5]
+            if requirements is None or requirements == "":
+                requirements = "No requirements."
+
+            add_field(embed, "Requirements", requirements.replace(". ", ".\n"), False)
             add_field(embed, "Academic Level", course[6], True)
             add_field(embed, "Units", course[7], True)
 
