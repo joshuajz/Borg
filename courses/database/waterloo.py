@@ -67,6 +67,8 @@ def pull_values(courses=get_courses()):
         for i in string:
             if i.isnumeric():
                 final += i
+            elif i.upper() == "B":
+                return None
         try:
             return int(final)
         except:
