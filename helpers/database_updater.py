@@ -1,21 +1,35 @@
 import sqlite3
 import os
 import sys
+import asyncio
 
 sys.path.append("../")
-from methods.database import database_connection, SERVERS_DIR
+from methods.database import database_connection
+from methods.database import SERVERS_DIR
 
 
-os.chdir(SERVERS_DIR)
+async def main():
+    target_database = f"{SERVERS_DIR}/target.db"
+    os.chdir(SERVERS_DIR)
+    list_dir = os.listdir()
+    for f in list_dir:
 
-target_database = f"{SERVERS_DIR}/target.db"
+        db = await database_connection(f)
 
-list_dir = os.listdir()
-for f in list_dir:
-    db = database_connection(f)
+        tables = (
+            db["db"]
+            .execute("SELECT name FROM sqlite_master WHERE type='table'")
+            .fetchall()
+        )
 
-    tables = (
-        db["db"].execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-    )
-    print(tables)
-    print("\n\n")
+        schema = {}
+
+        for table in tables:
+            schema[table[0]] = (
+                db["db"].execute(f"PRAGMA table_info({table[0]})").fetchall()
+            )
+        print(schema)
+        break
+
+
+asyncio.run(main())
