@@ -16,7 +16,10 @@ SCHOOLS = ("queens", "waterloo")
 
 async def queens_embed(course):
     embed = create_embed(
-        course[0], course[4], "cyan", thumbnail=COURSE_IMAGES["queens"]
+        f"{course[0]} - {course[3]}",
+        course[4],
+        "cyan",
+        thumbnail=COURSE_IMAGES["queens"],
     )
 
     requirements = course[5]
@@ -32,7 +35,26 @@ async def queens_embed(course):
     return embed
 
 
-SCHOOL_EMBEDS = {"queens": queens_embed}
+async def waterloo_embed(course):
+    embed = create_embed(
+        f"{course[0]} - {course[3]}",
+        course[4],
+        "cyan",
+        thumbnail=COURSE_IMAGES["waterloo"],
+    )
+
+    requirements = course[5]
+    if requirements is None or requirements == "":
+        requirements = (
+            "Unknown/No Requirements.  Check the Waterloo website for more information."
+        )
+
+    add_field(embed, "Requirements", requirements, False)
+
+    return embed
+
+
+SCHOOL_EMBEDS = {"queens": queens_embed, "waterloo": waterloo_embed}
 
 
 async def course(ctx, course, school=None):
@@ -94,8 +116,12 @@ async def course(ctx, course, school=None):
             for school, course in results.items():
                 embed = await SCHOOL_EMBEDS[school](course)
                 await ctx.send(embed=embed)
-        # else:
-        #     # Multiple courses provided.
+        else:
+            # Multiple courses provided.
+            await ctx.send(
+                "Multiple schools have that course, please provide a school.",
+                hidden=True,
+            )
 
 
 def grab_courses(course):
