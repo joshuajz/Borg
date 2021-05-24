@@ -5,11 +5,13 @@ import asyncio
 
 sys.path.append("../")
 from methods.database import database_connection
-from methods.database import SERVERS_DIR
+
+ROOT_DIR = f"{os.path.dirname(os.path.dirname(os.path.abspath(__file__)))}"
+SERVERS_DIR = f"{ROOT_DIR}/Borg/servers"
 
 
 async def main():
-    commands = []
+    commands = ["ALTER TABLE settings ADD courses_default_school text"]
 
     os.chdir(SERVERS_DIR)
     list_dir = os.listdir()
