@@ -16,6 +16,8 @@ intents = discord.Intents().default()
 intents.members = True
 intents.reactions = True
 
+# Root directory
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 slash_cogs = ("s_commands", "s_programs", "s_roles", "s_help", "s_course")
 classic_cogs = ("c_commands", "c_programs", "c_roles", "c_help")
@@ -56,7 +58,7 @@ async def on_message(ctx):
             )
         else:
             command = ctx.content[1::].split(" ")[0].lower().strip().lower()
-        print(command)
+
         await custom_command_handling(ctx, command)
 
 

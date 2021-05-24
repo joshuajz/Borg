@@ -26,6 +26,9 @@ def create_embed(
         timestamp=datetime.datetime.utcnow(),
     )
 
+    if thumbnail is not None:
+        message.set_thumbnail(url=thumbnail)
+
     if footer == "contact":
         message.set_footer(text="Contact JZ#7252 with concerns.")
     else:

@@ -9,27 +9,17 @@ from methods.database import SERVERS_DIR
 
 
 async def main():
-    target_database = f"{SERVERS_DIR}/target.db"
+    commands = []
+
     os.chdir(SERVERS_DIR)
     list_dir = os.listdir()
     for f in list_dir:
 
         db = await database_connection(f)
 
-        tables = (
-            db["db"]
-            .execute("SELECT name FROM sqlite_master WHERE type='table'")
-            .fetchall()
-        )
-
-        schema = {}
-
-        for table in tables:
-            schema[table[0]] = (
-                db["db"].execute(f"PRAGMA table_info({table[0]})").fetchall()
-            )
-        print(schema)
-        break
+        for command in commands:
+            db["db"].execute(command)
+            db["con"].commit()
 
 
 asyncio.run(main())
