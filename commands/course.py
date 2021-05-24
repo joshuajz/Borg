@@ -1,15 +1,17 @@
 import discord
 import sqlite3
-from main import ROOT_DIR
 from methods.embed import create_embed, add_field
 import json
+import os
 
 # Options:
 # User provides course and school -> return the course if it exists, otherwise return a list of courses in that faculty
 # User provides course and school is auto picked from discord -> return the course if it exists, otherwise return a list of courses in that faculty
 # User provides a course code and no school and no school default -> find that course code at various unis and release it, otherwise return nothing
 
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COURSE_IMAGES = json.load(open(f"{ROOT_DIR}/courses/icons/uploaded_icons.json", "r"))
+SCHOOLS = ("queens", "waterloo")
 
 
 async def queens_embed(course):
@@ -30,10 +32,10 @@ async def queens_embed(course):
     return embed
 
 
-school_embeds = {"queens": queens_embed}
+SCHOOL_EMBEDS = {"queens": queens_embed}
 
 
-async def course(ctx, course, school):
+async def course(ctx, course, school=None):
     db = course_database()
 
     if school:
@@ -45,7 +47,7 @@ async def course(ctx, course, school):
 
         # Found the course
         if len(course_fetched) == 1:
-            embed = await school_embeds[school](course_fetched[0])
+            embed = await SCHOOL_EMBEDS[school](course_fetched[0])
             await ctx.send(embed=embed)
         elif len(course_fetched) == 0:
             faculty = grab_faculty(course)
@@ -79,6 +81,39 @@ async def course(ctx, course, school):
                     "cyan",
                 )
                 await ctx.send(embed=embed, hidden=True)
+    else:
+        # We don't have a school so we're going to need to query every school that we have for that course code
+        results = grab_courses(course)
+
+        if len(results) == 0:
+            await ctx.send(
+                "Invalid Course Code.  I could not find that course at any of the schools in my database.",
+                hiddne=True,
+            )
+        elif len(results) == 1:
+            for school, course in results.items():
+                embed = await SCHOOL_EMBEDS[school](course)
+                await ctx.send(embed=embed)
+        # else:
+        #     # Multiple courses provided.
+
+
+def grab_courses(course):
+    db = course_database()
+
+    results = {}
+
+    for school in SCHOOLS:
+
+        result = (
+            db["db"]
+            .execute(f"SELECT * FROM {school} WHERE id = (?)", (course,))
+            .fetchone()
+        )
+        if result:
+            results[school] = result
+
+    return results
 
 
 def grab_faculty(course):
@@ -89,6 +124,6 @@ def grab_faculty(course):
     return final
 
 
-async def course_database():
+def course_database():
     con = sqlite3.connect(f"{ROOT_DIR}/courses/database/database.db")
     return {"db": con.cursor(), "con": con}

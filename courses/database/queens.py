@@ -29,7 +29,7 @@ def create_database():
 	"department"	TEXT NOT NULL,
 	"name"	TEXT NOT NULL,
 	"description"	TEXT NOT NULL,
-	"requirements"	TEXT NOT NULL,
+	"requirements"	TEXT,
 	"academic_level"	TEXT NOT NULL,
 	"units"	INTEGER NOT NULL
 );"""
@@ -52,6 +52,7 @@ def place_info(items: list):
     for item in items:
         course_id = item["id"]
         course_code = item["course_code"]
+        requirements = item["requirements"]
 
         if item["units"] == 0:
             continue
@@ -62,6 +63,9 @@ def place_info(items: list):
         if course_code[-1] == "B" or course_code[-1] == "A":
             course_code = course_code[0:-1]
 
+        if requirements == "":
+            requirements = None
+
         cursor.execute(
             "INSERT INTO queens VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (
@@ -70,7 +74,7 @@ def place_info(items: list):
                 item["department"],
                 item["course_name"],
                 item["description"],
-                item["requirements"],
+                requirements,
                 item["academic_level"],
                 item["units"],
             ),

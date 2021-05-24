@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from discord_slash import cog_ext, SlashContext
-from courses.pull_courses import pull_course
+from commands.course import course as call_course
 from discord_slash.utils.manage_commands import create_option
 
 
@@ -36,7 +36,7 @@ class Slash_Help(commands.Cog):
                     final += i
             course = final
 
-        result = await pull_course(course, "queens")
+        result = await call_course(ctx, course)
 
         if result[0] == True:
             await ctx.send(embed=result[1])

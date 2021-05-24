@@ -83,7 +83,7 @@ def pull_values(courses=get_courses()):
         course_id = pull_numbers(course["catalogNumber"])
         if course_id is None:
             continue
-        course_code = course["subjectCode"] + str(course_id)
+        course_code = course["subjectCode"] + "-" + str(course_id)
 
         if course_code in current_courses:
             continue
@@ -91,8 +91,8 @@ def pull_values(courses=get_courses()):
         cursor.execute(
             "INSERT INTO waterloo VALUES (?, ?, ?, ?, ?, ?)",
             (
-                pull_numbers(course["catalogNumber"]),
                 course_code,
+                pull_numbers(course["catalogNumber"]),
                 course["subjectCode"],
                 course["title"],
                 course["description"],
