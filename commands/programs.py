@@ -165,6 +165,7 @@ async def programs_edit(ctx, client, user, before, after):
 
     # Create a verification Embed
     embed = create_embed("Programs (Edit) Verification Required", "", "magenta")
+    add_field(embed, "User", f"{(await client.fetch_user(user)).mention}", True)
     add_field(embed, "Before", p[before], True)
     add_field(embed, "After", after, True)
 
@@ -262,6 +263,8 @@ async def programs_reaction_handling(ctx, client):
     embeds = m.embeds[0]
 
     reactions = m.reactions
+
+    print(reactions[0].count, reactions[1].count)
 
     # Checks to ensure no one else has already added the reactions
     if not (
@@ -377,8 +380,8 @@ async def programs_reaction_handling(ctx, client):
                 return True
 
             # New addition & Current
-            programs_newmsg = embeds.fields[0].value
             program_change = embeds.fields[1].value
+            programs_newmsg = embeds.fields[2].value
 
             # Delete
             await m.delete()
@@ -429,7 +432,7 @@ async def programs_reaction_handling(ctx, client):
                 dm_channel = user.dm_channel
 
             # Send a status message
-            embed = create_embed("!Programs Edit Was Successful", "", "light_green")
+            embed = create_embed("Programs Edit Was Successful", "", "light_green")
             add_field(embed, "Programs", final_programs, True)
 
             try:
