@@ -149,15 +149,15 @@ async def programs_edit(ctx, client, user, before, after):
 
     programs = (
         db["db"]
-        .execute("SELECT * FROM programs WHERE user_id = (?)", (user,))
-        .fetchall()
-    )
+        .execute("SELECT description FROM programs WHERE user_id = (?)", (user,))
+        .fetchone()
+    )[0].split("\n")
 
     # Entire programs list
     p = {}
     i = 1
     for program in programs:
-        p[i] = program[1]
+        p[i] = program
         i += 1
 
     if before not in p.keys():
