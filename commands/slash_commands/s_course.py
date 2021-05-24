@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord_slash import cog_ext, SlashContext
 from commands.course import course as call_course
-from discord_slash.utils.manage_commands import create_option
+from discord_slash.utils.manage_commands import create_option, create_choice
 
 
 class Slash_Help(commands.Cog):
@@ -18,10 +18,20 @@ class Slash_Help(commands.Cog):
                 description="The course code.",
                 option_type=3,
                 required=True,
-            )
+            ),
+            create_option(
+                name="school",
+                description="The school the course is at.",
+                option_type=3,
+                required=False,
+                choices=[
+                    create_choice(name="Queens University", value="queens"),
+                    create_choice(name="University of Waterloo", value="waterloo"),
+                ],
+            ),
         ],
     )
-    async def _course(self, ctx, course):
+    async def _course(self, ctx, course, school=None):
         if " " in course:
             course = course.split(" ")
             course = f"{course[0].upper()}-{course[1]}"
@@ -36,7 +46,7 @@ class Slash_Help(commands.Cog):
                     final += i
             course = final
 
-        result = await call_course(ctx, course)
+        result = await call_course(ctx, course, school)
 
         if result[0] == True:
             await ctx.send(embed=result[1])

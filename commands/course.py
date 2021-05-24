@@ -57,7 +57,7 @@ async def waterloo_embed(course):
 SCHOOL_EMBEDS = {"queens": queens_embed, "waterloo": waterloo_embed}
 
 
-async def course(ctx, course, school=None):
+async def course(ctx, course, school):
     db = course_database()
 
     if school:

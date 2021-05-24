@@ -6,7 +6,7 @@ from typing import Dict
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(ROOT_DIR)
-SERVERS_DIR = f"{os.path.dirname(os.path.dirname(os.path.abspath(__file__)))}/servers"
+SERVERS_DIR = f"{ROOT_DIR}/servers"
 
 
 async def check_filesystem(client: discord.Client):
@@ -55,7 +55,7 @@ async def create_database(db: dict) -> bool:
         "moderator_id"	INTEGER,
         "reason"	TEXT,
         "active"    BOOL)""",
-        "CREATE TABLE settings (programs_channel text)",
+        "CREATE TABLE settings (programs_channel text, courses_default_school text)",
     ]
 
     for command in db_commands:
