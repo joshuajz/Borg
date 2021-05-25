@@ -63,7 +63,7 @@ async def course(ctx, course, school):
     if school:
         course_fetched = (
             db["db"]
-            .execute("SELECT * FROM (?) WHERE id = (?)", (school, course))
+            .execute(f"SELECT * FROM {school} WHERE id = (?)", (course,))
             .fetchall()
         )
 
