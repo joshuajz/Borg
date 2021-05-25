@@ -40,10 +40,11 @@ class Slash_Help(commands.Cog):
             dash = False
             for i in course:
                 if i.isnumeric() and not dash:
-                    final += "-" + i
+                    final += "-" + i.upper()
                     dash = True
                 else:
-                    final += i
+                    final += i.upper()
+            print(course)
             course = final
 
         await call_course(ctx, course, school)

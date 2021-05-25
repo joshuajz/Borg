@@ -51,7 +51,7 @@ def create_database():
     cursor.execute(
         """CREATE TABLE "waterloo" (
         "id" TEXT NOT NULL,
-        "course_code" INTEGER NOT NULL,
+        "course_code" TEXT NOT NULL,
         "department" TEXT NOT NULL,
         "name" TEXT NOT NULL,
         "description" TEXT NOT NULL,
@@ -62,28 +62,16 @@ def create_database():
 
 
 def pull_values(courses=get_courses()):
-    def pull_numbers(string):
-        final = ""
-        for i in string:
-            if i.isnumeric():
-                final += i
-            elif i.upper() == "B":
-                return None
-        try:
-            return int(final)
-        except:
-            return None
 
     current_courses = [
-        i[0] for i in cursor.execute("SELECT course_code FROM waterloo").fetchall()
+        i[0] for i in cursor.execute("SELECT id FROM waterloo").fetchall()
     ]
 
     for course in courses:
-
-        course_id = pull_numbers(course["catalogNumber"])
+        course_id = course["catalogNumber"]
         if course_id is None:
             continue
-        course_code = course["subjectCode"] + "-" + str(course_id)
+        course_code = course["subjectCode"] + "-" + course_id
 
         if course_code in current_courses:
             continue
@@ -92,7 +80,7 @@ def pull_values(courses=get_courses()):
             "INSERT INTO waterloo VALUES (?, ?, ?, ?, ?, ?)",
             (
                 course_code,
-                pull_numbers(course["catalogNumber"]),
+                course["catalogNumber"],
                 course["subjectCode"],
                 course["title"],
                 course["description"],
