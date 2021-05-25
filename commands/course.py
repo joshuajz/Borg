@@ -110,7 +110,7 @@ async def course(ctx, course, school):
         if len(results) == 0:
             await ctx.send(
                 "Invalid Course Code.  I could not find that course at any of the schools in my database.",
-                hiddne=True,
+                hidden=True,
             )
         elif len(results) == 1:
             for school, course in results.items():
