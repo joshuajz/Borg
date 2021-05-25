@@ -46,12 +46,7 @@ class Slash_Help(commands.Cog):
                     final += i
             course = final
 
-        result = await call_course(ctx, course, school)
-
-        if result[0] == True:
-            await ctx.send(embed=result[1])
-        else:
-            await ctx.send(result[1], hidden=True)
+        await call_course(ctx, course, school)
 
 
 def setup(bot):
