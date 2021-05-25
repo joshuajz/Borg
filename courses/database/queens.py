@@ -24,8 +24,8 @@ def get_info(offset=0):
 def create_database():
     cursor.execute(
         """CREATE TABLE "queens" (
-	"id"	INTEGER NOT NULL,
-    "course_code"	TEXT NOT NULL,
+	"id"	TEXT NOT NULL,
+    "course_code"	INTEGER NOT NULL,
 	"department"	TEXT NOT NULL,
 	"name"	TEXT NOT NULL,
 	"description"	TEXT NOT NULL,
