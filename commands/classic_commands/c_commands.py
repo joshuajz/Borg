@@ -28,9 +28,9 @@ class Classic_Custom_Commands(commands.Cog):
             command = msg[2].replace("!", "")
             if msg[-1].startswith("image="):
                 image = msg[-1].split("image=")[1]
-                description = " ".join(msg[2:-1])
+                description = " ".join(msg[3:-1])
             else:
-                description = " ".join(msg[2::])
+                description = " ".join(msg[3::])
 
             result = await custom_command_add(ctx, command, description, image)
 
