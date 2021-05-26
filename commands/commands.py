@@ -91,8 +91,7 @@ async def custom_command_add(ctx, name: str, description: str, image: str or Non
 
     # Find all of the current commands
     command_list = [
-        i[0][1::]
-        for i in db["db"].execute("SELECT command FROM custom_commands").fetchall()
+        i[0] for i in db["db"].execute("SELECT command FROM custom_commands").fetchall()
     ]
 
     # Ensure the current command is unique

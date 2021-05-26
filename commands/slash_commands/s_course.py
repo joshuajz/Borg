@@ -44,7 +44,7 @@ class Slash_Help(commands.Cog):
                     dash = True
                 else:
                     final += i.upper()
-            print(course)
+
             course = final
 
         await call_course(ctx, course, school)
