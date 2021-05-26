@@ -25,7 +25,9 @@ class Classic_Custom_Commands(commands.Cog):
         msg = ctx.message.content.split(" ")
         if len(msg) >= 4 and msg[1] == "add":
             image = None
-            command = msg[2].replace("!", "")
+            command = msg[2]
+            if command[0] == "!":
+                command = command[1::]
             if msg[-1].startswith("image="):
                 image = msg[-1].split("image=")[1]
                 description = " ".join(msg[3:-1])

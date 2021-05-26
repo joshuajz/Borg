@@ -122,7 +122,7 @@ async def custom_command_remove(ctx, command: str) -> list:
 
     # Grabs all of the commands
     command_list = [
-        i for i in db["db"].execute("SELECT * FROM custom_commands").fetchall()
+        i[0] for i in db["db"].execute("SELECT command FROM custom_commands").fetchall()
     ]
 
     if command in command_list:

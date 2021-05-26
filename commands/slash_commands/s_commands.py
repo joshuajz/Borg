@@ -69,8 +69,10 @@ class Slash_Custom_Commands(commands.Cog):
             )
         ],
     )
-    async def _command_remove(self, ctx, remove):
-        command_remove = await custom_command_remove(ctx, remove)
+    async def _command_remove(self, ctx, name):
+        command_remove = await custom_command_remove(
+            ctx, name[1::] if name[0] == "!" else name
+        )
 
         await ctx.send(command_remove[1])
 
