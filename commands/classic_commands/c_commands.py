@@ -26,8 +26,8 @@ class Classic_Custom_Commands(commands.Cog):
         if len(msg) >= 4 and msg[1] == "add":
             image = None
             command = msg[2].replace("!", "")
-            if msg[-1].startswith("http"):
-                image = msg[-1]
+            if msg[-1].startswith("image="):
+                image = msg[-1].split("image=")[1]
                 description = " ".join(msg[2:-1])
             else:
                 description = " ".join(msg[2::])
@@ -39,7 +39,7 @@ class Classic_Custom_Commands(commands.Cog):
         else:
             embed = create_embed(
                 "Command: !command",
-                "**Description**: Allows you to manage the server's custom commands.\n**Sub Commands**:\n!command add - Adds a command\n**Usage**:\n!command add !hello Hello everyone how are you https://google.com/image.png\n!command add !hi Hello how are you?",
+                "**Description**: Allows you to manage the server's custom commands.\n**Sub Commands**:\n!command add - Adds a command\n**Usage**:\n!command add !command_name command's description goes here image=linktoimage\n!command add !hello Hello everyone how are you image=https://google.com/image.png\n!command add !hi Hello how are you?",
                 "orange",
             )
             await ctx.send(embed=embed)

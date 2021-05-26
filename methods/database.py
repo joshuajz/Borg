@@ -69,7 +69,7 @@ async def create_database(db: dict) -> bool:
             False,
         ),
     )
-    db["db"].execute("INSERT INTO settings VALUES (?)", (None,))
+    db["db"].execute("INSERT INTO settings VALUES (?, ?)", (None, None))
 
     db["con"].commit()
 
