@@ -50,11 +50,24 @@ def place_info(courses: list):
         m = r.match(code)
         return (code, m.group(2), m.group(1))
 
+    """
+    H1 - UTSG half year
+    Y1 - UTSG full year
+
+    H3 - UTSC half year
+    Y3 - UTSC full year
+
+    H5 - UTM half year
+    Y5 - UTM full year
+    """
+
     current_courses = [
         i[0] for i in cursor.execute("SELECT course_code FROM waterloo").fetchall()
     ]
 
     for course in courses:
+        print(course)
+        break
         code = course["code"]
 
         course_info = split_code(code)

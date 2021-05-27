@@ -11,7 +11,7 @@ import os
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COURSE_IMAGES = json.load(open(f"{ROOT_DIR}/courses/icons/uploaded_icons.json", "r"))
-SCHOOLS = ("queens", "waterloo")
+SCHOOLS = ("queens", "waterloo", "uoft")
 
 
 async def queens_embed(course):
@@ -35,6 +35,10 @@ async def queens_embed(course):
     return embed
 
 
+async def uoft_embed(course):
+    print()
+
+
 async def waterloo_embed(course):
     embed = create_embed(
         f"{course[0]} - {course[3]}",
@@ -54,7 +58,7 @@ async def waterloo_embed(course):
     return embed
 
 
-SCHOOL_EMBEDS = {"queens": queens_embed, "waterloo": waterloo_embed}
+SCHOOL_EMBEDS = {"queens": queens_embed, "waterloo": waterloo_embed, "uoft": uoft_embed}
 
 
 async def course(ctx, course, school):

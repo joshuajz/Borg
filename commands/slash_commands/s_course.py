@@ -27,6 +27,7 @@ class Slash_Help(commands.Cog):
                 choices=[
                     create_choice(name="Queens University", value="queens"),
                     create_choice(name="University of Waterloo", value="waterloo"),
+                    create_choice(name='University of Toronto', value='uoft')
                 ],
             ),
         ],
