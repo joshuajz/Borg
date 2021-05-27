@@ -218,7 +218,7 @@ async def programs(ctx, user: str) -> list:
             message += f"{number}. {programs_list[i]}" + (
                 "\n" if i != (len(programs_list) - 1) else ""
             )
-    print(message)
+
     return [True, message]
 
 

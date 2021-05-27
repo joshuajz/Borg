@@ -13,8 +13,22 @@ class Classic_Programs(commands.Cog):
         self.bot = bot
 
     @commands.command(name="programs")
-    async def _programs(self, ctx, user: discord.User):
+    async def _programs(self, ctx):
+        content = ctx.message.content.split(" ")
+        if len(content) != 2:
+            embed = create_embed(
+                "Command: !programs",
+                "**Description**: Allows you to see a user's programs.\n**Usage**:\n!programs Borg\n!programs <@749359897405161522>",
+                "orange",
+            )
+            await ctx.send(embed=embed)
+            return
+
+        user = content[1]
+
         user_id = parse_user(user)
+        if not user_id:
+            user_id = ctx.guild.get_member_named(content[1]).id
         if user_id == False:
             user_id = user.id
 
