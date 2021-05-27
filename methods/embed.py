@@ -14,6 +14,20 @@ class embedColours(enum.Enum):
     cyan = 0x28C0D4
 
 
+def create_embed_template(title: str, description: str, template: str):
+    if template == "error":
+        message = discord.Embed(
+            title=title,
+            description=description,
+            colour=embedColours["red"].value,
+            timestamp=datetime.datetime.utcnow(),
+        )
+        message.set_footer(
+            text="Contact JZ#7252 with bugs.",
+            icon_url="https://art.pixilart.com/a212f48d4198f72.png",
+        )
+
+
 def create_embed(
     title: str, description: str, colour: str, footer="contact", thumbnail=None
 ) -> discord.Embed:
@@ -30,7 +44,10 @@ def create_embed(
         message.set_thumbnail(url=thumbnail)
 
     if footer == "contact":
-        message.set_footer(text="Contact JZ#7252 with concerns.")
+        message.set_footer(
+            text="Created by JZ#7252.",
+            icon_url="https://art.pixilart.com/a212f48d4198f72.png",
+        )
     else:
         message.set_footer(text=footer)
 
