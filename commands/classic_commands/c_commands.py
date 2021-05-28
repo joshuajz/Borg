@@ -21,7 +21,7 @@ class Classic_Custom_Commands(commands.Cog):
         result = await custom_command_list(self.bot, ctx)
 
         if result != True:
-            await ctx.send(result[1])
+            await ctx.send(embed=result[1])
 
     @commands.command(name="command")
     async def _command(self, ctx):
@@ -48,7 +48,7 @@ class Classic_Custom_Commands(commands.Cog):
                         description = " ".join(msg[3::])
 
                     result = await custom_command_add(ctx, command, description, image)
-                    await ctx.send(result[1])
+                    await ctx.send(embed=result[1])
                 else:
                     embed = create_embed(
                         "Command: !command add",
@@ -61,7 +61,7 @@ class Classic_Custom_Commands(commands.Cog):
                 if len(msg) == 3:
                     command = msg[2][1::] if msg[2][0] == "!" else msg[2]
                     result = await custom_command_remove(ctx, command)
-                    await ctx.send(result[1])
+                    await ctx.send(embed=result[1])
                 else:
                     embed = create_embed(
                         "Command: !command remove",

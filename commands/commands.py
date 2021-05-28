@@ -169,7 +169,9 @@ async def custom_command_remove(ctx, command: str) -> list:
         return [
             True,
             create_embed(
-                "Command Successfully Deleted", f"Command Deleted: {command_delete}"
+                "Command Successfully Deleted",
+                f"Command Deleted: !{command_delete[0]}",
+                "light_green",
             ),
         ]
     else:
