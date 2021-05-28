@@ -1,7 +1,7 @@
 import discord
 from methods.database import database_connection
-from methods.embed import create_embed, add_field
-from methods.data import parse_user, parse_channel, find_channel
+from methods.embed import create_embed, add_field, create_embed_template
+from methods.data import parse_user
 
 
 async def programs_add(ctx, client, programs: list, user: int) -> list:
@@ -17,7 +17,11 @@ async def programs_add(ctx, client, programs: list, user: int) -> list:
     if programs_channel is None:
         return [
             False,
-            "The admins haven't created a programs channel.  Have an admin run /programs setup.",
+            create_embed_template(
+                "No Programs Channel",
+                "The admins haven't created a programs channel.  Have an admin run /programs setup.",
+                "error",
+            ),
         ]
 
     programs_channel = int(programs_channel)
@@ -45,7 +49,12 @@ async def programs_add(ctx, client, programs: list, user: int) -> list:
     for emoji in ["✅", "❌"]:
         await verification_msg.add_reaction(emoji)
 
-    return [True, "Programs successfully sent to Moderators.", programs_msg]
+    return [
+        True,
+        create_embed(
+            "Programs successfully sent to Moderators.", programs_msg, "light_green"
+        ),
+    ]
 
 
 async def programs_remove(ctx, programs: str, user=None) -> list:
@@ -58,8 +67,13 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
         if ctx.author.guild_permissions.administrator == False:
             return [
                 False,
-                "You do not have permission to remove programs for other users.",
+                create_embed_template(
+                    "No Permission",
+                    "You do not have permission to remove programs for other users.",
+                    "error",
+                ),
             ]
+
         else:
             user_id = user
     else:
@@ -73,7 +87,10 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
         db["db"].execute("DELETE FROM programs WHERE user_id = (?)", (user_id,))
         db["con"].commit()
 
-        return [True, "Removed **all** programs successfully."]
+        return [
+            True,
+            create_embed("Removed **all** program successfully.", "", "light_green"),
+        ]
 
     remove_programs = []
 
@@ -85,7 +102,14 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
     try:
         remove_programs = [int(i) for i in remove_programs]
     except:
-        return [False, "Invalid Removal Value(s) provided."]
+        return [
+            False,
+            create_embed_template(
+                "Invalid Values",
+                "Invalid removal values were provided.  Provide a number corrosponding to the program(s) you would like to remove.",
+                "error",
+            ),
+        ]
 
     # All programs
     all_programs = {}
@@ -112,7 +136,10 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
         "UPDATE programs SET description = (?) WHERE user_id = (?)", (message, user_id)
     )
 
-    return [True, "Programs Removed Successfully.", message]
+    return [
+        True,
+        create_embed("Programs Removed Successfully.", message, "light_green"),
+    ]
 
 
 async def programs_edit(ctx, client, user, before, after):
@@ -120,16 +147,31 @@ async def programs_edit(ctx, client, user, before, after):
 
     # Check user
     if user is None:
-        return [False, "Invalid Arguments (user was Null)."]
+        return [
+            False,
+            create_embed_template("Invalid Arguments", "User was null.", "error"),
+        ]
 
     # Check before and after
     if before is None or after is None:
-        return [False, "Invalid Arguments (before or after)."]
+        return [
+            False,
+            create_embed_template(
+                "Invalid Arguments", "*Before* or *after* value is invalid.", "error"
+            ),
+        ]
 
     try:
         before = int(before)
     except:
-        return [False, "Invalid 'before' value (ie. not a number)."]
+        return [
+            False,
+            create_embed_template(
+                "Invalid Arguments",
+                "*Before* value is invalid (not a number).",
+                "error",
+            ),
+        ]
 
     user = parse_user(user)
 
@@ -144,7 +186,11 @@ async def programs_edit(ctx, client, user, before, after):
     if programs_channel is None:
         return [
             False,
-            "The admins haven't created a programs channel.  Have an admin run /programs setup.",
+            create_embed_template(
+                "Invalid Channel",
+                "The admins haven't created a programs channel.  Have an admin run /programs setup.",
+                "error",
+            ),
         ]
 
     programs = (
@@ -161,7 +207,14 @@ async def programs_edit(ctx, client, user, before, after):
         i += 1
 
     if before not in p.keys():
-        return [False, "You do not have a program with that numerical value."]
+        return [
+            False,
+            create_embed_template(
+                "Invalid Program",
+                "You do not have a program with that *before* value.",
+                "error",
+            ),
+        ]
 
     # Create a verification Embed
     embed = create_embed("Programs (Edit) Verification Required", "", "magenta")
@@ -176,7 +229,13 @@ async def programs_edit(ctx, client, user, before, after):
     for emoji in ["✅", "❌"]:
         await verify_msg.add_reaction(emoji)
 
-    return [True, "Programs successfully sent to the Moderators.", embed]
+    embed = create_embed(
+        "Program Edit successfully sent to the moderators.", "", "light_green"
+    )
+    add_field(embed, "Before", p[before], True)
+    add_field(embed, "After", after, True)
+
+    return [True, embed]
 
 
 async def programs(ctx, user: str) -> list:
@@ -184,7 +243,10 @@ async def programs(ctx, user: str) -> list:
 
     # Check
     if user is None:
-        return [False, "Invalid Arguments (user was Null)."]
+        return [
+            False,
+            create_embed_template("Invalid Arguments", "User was Null.", "error"),
+        ]
 
     # Gets the user's id
     user = parse_user(user)
@@ -202,7 +264,11 @@ async def programs(ctx, user: str) -> list:
     if programs_list is None:
         return [
             False,
-            "That user doesn't have any programs.  That user needs to use /programs add",
+            create_embed_template(
+                "Invalid User",
+                "That user doesn't have any programs, have them use /programs add.",
+                "error",
+            ),
         ]
 
     programs_list = programs_list[1].split("\n")
@@ -219,7 +285,12 @@ async def programs(ctx, user: str) -> list:
                 "\n" if i != (len(programs_list) - 1) else ""
             )
 
-    return [True, message]
+    user = ctx.guild.get_user(user)
+
+    return [
+        True,
+        create_embed(f"{user.name}#{user.discriminator}'s Programs", message, "orange"),
+    ]
 
 
 async def programs_setup(ctx, channel: int):
@@ -236,7 +307,12 @@ async def programs_setup(ctx, channel: int):
     db["db"].execute("UPDATE settings SET programs_channel = (?)", (channel,))
     db["con"].commit()
 
-    return ["True", f"Programs Setup Successfully.  Channel: <#{channel}>"]
+    return [
+        "True",
+        create_embed(
+            f"Programs Setup Successfully.", "Channel: <#{channel}>", "light_green"
+        ),
+    ]
 
 
 async def programs_reaction_handling(ctx, client):
@@ -263,8 +339,6 @@ async def programs_reaction_handling(ctx, client):
     embeds = m.embeds[0]
 
     reactions = m.reactions
-
-    print(reactions[0].count, reactions[1].count)
 
     # Checks to ensure no one else has already added the reactions
     if not (

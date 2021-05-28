@@ -34,16 +34,7 @@ class Classic_Programs(commands.Cog):
 
         p = await programs(ctx, user_id)
 
-        # Successfully grabbed programs
-        if p[0] == True:
-            user = self.bot.get_user(user_id)
-            embed = create_embed(
-                f"{user.name}#{user.discriminator}'s Programs", p[1], "orange"
-            )
-            await ctx.send(embed=embed)
-        else:
-            # Return the error
-            await ctx.send(p[1])
+        await ctx.send(embed=p[1])
 
 
 def setup(bot):

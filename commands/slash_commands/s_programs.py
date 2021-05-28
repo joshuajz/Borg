@@ -108,16 +108,8 @@ class Slash_Programs(commands.Cog):
         ],
     )
     async def _programs(self, ctx, user):
-        result = await programs(ctx, user.id)
-
-        if result[0] == True:
-
-            embed = create_embed(
-                f"{user.name}#{user.discriminator}'s Programs", result[1], "orange"
-            )
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send(result[1])
+        result = await programs(ctx, user)
+        await ctx.send(embed=result[1])
 
     @cog_ext.cog_subcommand(
         base="programs",

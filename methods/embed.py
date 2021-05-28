@@ -15,7 +15,7 @@ class embedColours(enum.Enum):
 
 
 def create_embed_template(title: str, description: str, template: str):
-    if template == "error":
+    if template.lower() == "error":
         message = discord.Embed(
             title=title,
             description=description,
@@ -26,6 +26,7 @@ def create_embed_template(title: str, description: str, template: str):
             text="Contact JZ#7252 with bugs.",
             icon_url="https://art.pixilart.com/a212f48d4198f72.png",
         )
+    return message
 
 
 def create_embed(
