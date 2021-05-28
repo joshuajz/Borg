@@ -54,15 +54,7 @@ class Slash_Programs(commands.Cog):
 
         result = await programs_add(ctx, self.bot, programs, user)
 
-        if result[0] == False:
-            await ctx.send(result[1], hidden=True)
-        else:
-            embed = create_embed(
-                "Programs Successfully Sent to the Moderators.",
-                result[2],
-                "light_green",
-            )
-            await ctx.send(embed=embed, hidden=True)
+        await ctx.send(embed=result[1], hidden=True)
 
     @cog_ext.cog_subcommand(
         base="programs",
@@ -86,13 +78,8 @@ class Slash_Programs(commands.Cog):
 
         channel = channel.id
 
-        result = await programs_setup(ctx, channel)
-
-        if result[0] == True:
-            embed = create_embed(result[1], result[2], "light_green")
-            await ctx.send(embed=embed, hidden=True)
-        else:
-            await ctx.send(result[1], hidden=True)
+        result = await programs_setup(ctx, self.bot, channel)
+        await ctx.send(embed=result[1], hidden=True)
 
     @cog_ext.cog_subcommand(
         base="programs",
@@ -108,7 +95,7 @@ class Slash_Programs(commands.Cog):
         ],
     )
     async def _programs(self, ctx, user):
-        result = await programs(ctx, user)
+        result = await programs(ctx, self.bot, user.id)
         await ctx.send(embed=result[1])
 
     @cog_ext.cog_subcommand(
@@ -142,12 +129,7 @@ class Slash_Programs(commands.Cog):
 
         result = await programs_edit(ctx, self.bot, user, program_num, new_text)
 
-        if result[0]:
-            embed = result[2]
-            embed.title = "Program Edit sent to Moderators"
-            await ctx.send(embed=result[2], hidden=True)
-        else:
-            await ctx.send(result[1], hidden=True)
+        await ctx.send(embed=result[1], hidden=True)
 
     @cog_ext.cog_subcommand(
         base="programs",
@@ -176,11 +158,7 @@ class Slash_Programs(commands.Cog):
 
         result = await programs_remove(ctx, removal, user)
 
-        if result[0]:
-            embed = create_embed(result[1], "", "orange")
-            await ctx.send(embed=embed, hidden=True)
-        else:
-            await ctx.send(result[1], hidden=True)
+        await ctx.send(embed=result[1], hidden=True)
 
 
 def setup(bot):

@@ -114,9 +114,13 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
     # All programs
     all_programs = {}
     i = 1
-    for program in db["db"].execute(
-        "SELECT description FROM programs WHERE user_id = (?)",
-        (user_id).fetchone().split("\n"),
+    for program in (
+        db["db"]
+        .execute(
+            "SELECT description FROM programs WHERE user_id = (?)", (int(user_id),)
+        )
+        .fetchone()[0]
+        .split("\n")
     ):
         all_programs[i] = program
         i += 1
@@ -135,10 +139,15 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
     db["db"].execute(
         "UPDATE programs SET description = (?) WHERE user_id = (?)", (message, user_id)
     )
+    db["con"].commit()
 
     return [
         True,
-        create_embed("Programs Removed Successfully.", message, "light_green"),
+        create_embed(
+            "Programs Removed Successfully.",
+            f"**Current Programs**:\n {message}",
+            "light_green",
+        ),
     ]
 
 
@@ -238,7 +247,7 @@ async def programs_edit(ctx, client, user, before, after):
     return [True, embed]
 
 
-async def programs(ctx, user: str) -> list:
+async def programs(ctx, bot, user: str) -> list:
     """Display's a user's programs"""
 
     # Check
@@ -285,7 +294,7 @@ async def programs(ctx, user: str) -> list:
                 "\n" if i != (len(programs_list) - 1) else ""
             )
 
-    user = ctx.guild.get_user(user)
+    user = bot.get_user(user)
 
     return [
         True,
@@ -310,7 +319,7 @@ async def programs_setup(ctx, channel: int):
     return [
         "True",
         create_embed(
-            f"Programs Setup Successfully.", "Channel: <#{channel}>", "light_green"
+            f"Programs Setup Successfully.", f"Channel: <#{channel}>", "light_green"
         ),
     ]
 

@@ -28,11 +28,9 @@ class Classic_Programs(commands.Cog):
 
         user_id = parse_user(user)
         if not user_id:
-            user_id = ctx.guild.get_member_named(content[1]).id
-        if user_id == False:
-            user_id = user.id
+            user_id = ctx.guild.get_member_named(user).id
 
-        p = await programs(ctx, user_id)
+        p = await programs(ctx, self.bot, user_id)
 
         await ctx.send(embed=p[1])
 
