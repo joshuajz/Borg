@@ -3,7 +3,7 @@ import asyncio
 from urlextract import URLExtract
 from methods.database import database_connection
 from typing import List
-from methods.embed import create_embed, add_field
+from methods.embed import create_embed, create_embed_template
 from methods.paged_command import page_command
 
 
@@ -30,7 +30,11 @@ async def custom_command_list(bot, ctx) -> list:
     else:
         return [
             False,
-            "There are currently no commands!  Ask an admin to use /commands create.",
+            create_embed_template(
+                "No Commands",
+                "There are currently no commands, ask an admin to use /commands create or !commands add.",
+                "error",
+            ),
         ]
 
     await page_command(ctx, bot, message.split("\n"), "Commands")
@@ -45,7 +49,14 @@ async def custom_command_add(ctx, name: str, description: str, image: str or Non
 
     # Permissions check
     if ctx.author.guild_permissions.administrator != True:
-        return [False, "You do not have permission to create commands."]
+        return [
+            False,
+            create_embed_template(
+                "No Permission",
+                "You do not have permission to create a command.",
+                "error",
+            ),
+        ]
 
     urls = []
     if image:
@@ -76,13 +87,17 @@ async def custom_command_add(ctx, name: str, description: str, image: str or Non
         ):
             return [
                 False,
-                "Invalid image supplied.  Make sure your link is to an image.",
+                create_embed_template(
+                    "Invalid Image", "Make sure your link is to an image.", "error"
+                ),
             ]
     elif len(urls) == 2:
         # Too many URLs
         return [
             False,
-            "You provided too many links!  Borg can only support 1 link per image.",
+            create_embed_template(
+                "Too many Links", "Borg can only support 1 image per command.", "error"
+            ),
         ]
     else:
         urls = None
@@ -104,7 +119,14 @@ async def custom_command_add(ctx, name: str, description: str, image: str or Non
     )
     db["con"].commit()
 
-    return [True, f"Command Successfully Created!  Run it with !{name}"]
+    return [
+        True,
+        create_embed(
+            "Success",
+            f"Command successfully created, run it with !{name}",
+            "light_green",
+        ),
+    ]
 
 
 async def custom_command_remove(ctx, command: str) -> list:
@@ -112,7 +134,14 @@ async def custom_command_remove(ctx, command: str) -> list:
 
     # Permissions check
     if ctx.author.guild_permissions.administrator != True:
-        return [False, "You do not have permission to create commands."]
+        return [
+            False,
+            create_embed_template(
+                "No Permission",
+                "You do not have permission to create commands.",
+                "error",
+            ),
+        ]
 
     db = await database_connection(ctx.guild.id)
 
@@ -137,9 +166,19 @@ async def custom_command_remove(ctx, command: str) -> list:
         db["db"].execute("DELETE FROM custom_commands WHERE command = (?)", (command,))
         db["con"].commit()
 
-        return [True, "Command Successfully Deleted.", command_delete]
+        return [
+            True,
+            create_embed(
+                "Command Successfully Deleted", f"Command Deleted: {command_delete}"
+            ),
+        ]
     else:
-        return [False, "Invalid Command, check with !commands."]
+        return [
+            False,
+            create_embed_template(
+                "Invalid Command", "Check the commands with !commands.", "error"
+            ),
+        ]
 
 
 async def custom_command_handling(ctx, command: str):

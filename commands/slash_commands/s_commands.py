@@ -23,8 +23,10 @@ class Slash_Custom_Commands(commands.Cog):
     async def _command_list(self, ctx):
         result = await custom_command_list(self.bot, ctx)
 
-        if result != True:
-            await ctx.send(result[1], hidden=True)
+        if result[0]:
+            await ctx.send(embed=result[1])
+        else:
+            await ctx.send(embed=result[1], hidden=True)
 
     @cog_ext.cog_subcommand(
         base="command",
@@ -54,7 +56,7 @@ class Slash_Custom_Commands(commands.Cog):
     async def _command_add(self, ctx, name, description, image=None):
         command_add = await custom_command_add(ctx, name, description, image)
 
-        await ctx.send(command_add[1])
+        await ctx.send(embed=command_add, hidden=True)
 
     @cog_ext.cog_subcommand(
         base="command",
@@ -74,7 +76,7 @@ class Slash_Custom_Commands(commands.Cog):
             ctx, name[1::] if name[0] == "!" else name
         )
 
-        await ctx.send(command_remove[1])
+        await ctx.send(embed=command_remove[1])
 
     @cog_ext.cog_subcommand(
         base="command",
