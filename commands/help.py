@@ -9,51 +9,53 @@ async def help_command(ctx, bot):
     def check(reaction, user):
         return user == ctx.author and str(reaction) in ["◀️", "▶️"]
 
-    print("help command")
     pages = {}
 
-    embed = create_embed("Help", "General commands that everyone can use.", "orange")
-    add_field(embed, "!help or /help", "Provides this help command.", True)
-    add_field(
-        embed,
-        "!commands or /command list",
-        "Allows you to see all of the custom commands created for this server.",
-        True,
+    embed = create_embed(
+        "Help: Table of Contents",
+        "Page `1/4`\nPage 1: Table of Contents\nPage 2: General Commands\nPage 3: University Commands\nPage 4: Setup Commands",
+        "orange",
     )
-    add_field(
-        embed,
-        "/programs",
-        "Allows you to edit your pgorams.\n/programs add\n/programs remove\n/programs edit",
-        True,
-    )
-    add_field(
-        embed,
-        "!programs or /programs programs",
-        "Allows you to see a user's programs list.",
-        True,
-    )
-
     pages[1] = embed
 
-    embed2 = create_embed("Help", "Administrator Commands to Setup", "red")
+    embed = create_embed("Help: General Commands", "Page `2/4`", "orange")
     add_field(
-        embed2,
-        "/command",
-        "Allows you to edit custom commands.\n/command add\n/command remove\n/command use",
-        True,
+        embed,
+        "Commands",
+        "Allow you to use this server's custom commands.\n!commands - Lists the commands.",
+        False,
     )
-    add_field(
-        embed2, "/programs setup", "Allows you to set the verification channel.", True
-    )
+    pages[2] = embed
 
+    embed = create_embed("Help: University Commands", "Page `3/4`", "orange")
     add_field(
-        embed2,
-        "/welcome",
-        "Allows you to setup & toggle the welcome message.\n/welcome setup\n/welcome toggle",
-        True,
+        embed,
+        "Programs",
+        "Allows you to interact with programs lists.\n!programs - Allows you to see a user's programs.\n/programs add - Add programs.\n/programs remove - Remove programs.\n/programs edit - Edit one of your programs.\n",
+        False,
     )
+    add_field(
+        embed,
+        "Courses",
+        "Allows you to lookup a University's course.\n/course - Lookup a course.",
+        False,
+    )
+    pages[3] = embed
 
-    pages[2] = embed2
+    embed = create_embed("Help: Setup Commands", "Page `4/4`", "orange")
+    add_field(
+        embed,
+        "Programs",
+        "Allows you to setup the channel for programs verification.\n/programs setup {channel}\n",
+        False,
+    )
+    add_field(
+        embed,
+        "Commands",
+        "Allows you to add and remove your server's custom commands.\n/command add - Adds a command.\n/command remove - Removes a command.",
+        False,
+    )
+    pages[4] = embed
 
     # Send the original message w/ reactions
     msg = await ctx.send(embed=pages[1])
