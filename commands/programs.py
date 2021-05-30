@@ -79,9 +79,8 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
     else:
         user_id = ctx.author.id
 
-    db = await database_connection(ctx.guild_id)
+    db = await database_connection(ctx.guild.id)
 
-    #!
     # Deletes ALL the programs
     if programs.lower() in ["*", "all"]:
         db["db"].execute("DELETE FROM programs WHERE user_id = (?)", (user_id,))

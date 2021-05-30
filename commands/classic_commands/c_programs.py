@@ -4,7 +4,7 @@ import sys
 import re
 
 sys.path.append("../..")
-from commands.programs import programs, programs_add
+from commands.programs import programs, programs_add, programs_remove
 from methods.data import parse_user
 from methods.embed import create_embed
 
@@ -26,7 +26,18 @@ class Classic_Programs(commands.Cog):
             return
 
         subcommand = content[1]
+
+        def grab_user(content):
+            user = re.search(r"<@(?:&|!|)[0-9]{18}>", " ".join(content))
+            if not user:
+                return None, content
+            else:
+                content = " ".join(content).replace(user, "").split(" ")
+                user = parse_user(user.group())
+                return user, content
+
         if subcommand == "add" or subcommand == "a":
+
             #: !programs add Queens CS
             if len(content) == 2:
                 embed = create_embed(
@@ -38,12 +49,9 @@ class Classic_Programs(commands.Cog):
             else:
                 content = content[2::]
 
-                user = re.search(r"<@(?:&|!|)[0-9]{18}>", " ".join(content)).group()
-                if not user:
+                user, content = grab_user(content)
+                if user is None:
                     user = ctx.author.id
-                else:
-                    content = " ".join(content).replace(user, "").split(" ")
-                    user = parse_user(user)
 
                 potential_programs = " ".join(content).split("\n")
                 if len(potential_programs) == 1:
@@ -58,6 +66,15 @@ class Classic_Programs(commands.Cog):
                     potential_programs = p
 
                 await programs_add(ctx, self.bot, potential_programs, user)
+
+        elif subcommand == "remove" or subcommand == "r":
+            content = content[2::]
+
+            user, content = grab_user(content)
+            if user is None:
+                user = ctx.author.id
+
+            await programs_remove(ctx, " ".join(content), user)
 
         attempt_user = parse_user(subcommand)
         if attempt_user:
