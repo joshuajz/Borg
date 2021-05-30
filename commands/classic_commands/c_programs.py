@@ -23,6 +23,7 @@ class Classic_Programs(commands.Cog):
                 "orange",
             )
             await ctx.send(embed=embed)
+            return
 
         subcommand = content[1]
         if subcommand == "add" or subcommand == "a":
@@ -36,14 +37,15 @@ class Classic_Programs(commands.Cog):
                 await ctx.send(embed=embed)
             else:
                 content = content[2::]
-                user = re.search(r"<@[0-9]{18}>", content).group()
+
+                user = re.search(r"<@(?:&|!|)[0-9]{18}>", " ".join(content)).group()
                 if not user:
                     user = ctx.author.id
                 else:
-                    content.replace(user, "")
+                    content = " ".join(content).replace(user, "").split(" ")
                     user = parse_user(user)
 
-                potential_programs = content.split("\n")
+                potential_programs = " ".join(content).split("\n")
                 if len(potential_programs) == 1:
                     potential_programs = [
                         i.strip() for i in potential_programs[0].split(",")

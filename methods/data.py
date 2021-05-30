@@ -16,7 +16,7 @@ def parse_user(data: str) -> int:
     if data.isnumeric() and len(data) == 18:
         # User ID is given
         user_id = int(data)
-    elif data[0:3] == "<@!":
+    elif data[0:3] == "<@!" or data[0:3] == "<@&":
         user_id = int(data[3:-1])
     elif data[0:2] == "<@":
         user_id = int(data[2:-1])
