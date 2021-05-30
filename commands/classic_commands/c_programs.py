@@ -65,16 +65,26 @@ class Classic_Programs(commands.Cog):
                         p.extend(additions)
                     potential_programs = p
 
-                await programs_add(ctx, self.bot, potential_programs, user)
+                result = await programs_add(ctx, self.bot, potential_programs, user)
+                await ctx.send(embed=result[1])
 
         elif subcommand == "remove" or subcommand == "r":
+            if len(content) == 2:
+                embed = create_embed(
+                    "Command: !programs remove",
+                    "**Description**: Allows you to remove programs from your list.  Provide a comma seperated list of numbers, or * to remove all of your programs.\n**Usage**:\n!programs remove 1, 2, 3\n!programs remove * <@749359897405161522>",
+                    "orange",
+                )
+                await ctx.send(embed=embed)
+
             content = content[2::]
 
             user, content = grab_user(content)
             if user is None:
                 user = ctx.author.id
 
-            await programs_remove(ctx, " ".join(content), user)
+            result = await programs_remove(ctx, " ".join(content), user)
+            await ctx.send(embed=result[1])
 
         attempt_user = parse_user(subcommand)
         if attempt_user:

@@ -144,7 +144,9 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
         True,
         create_embed(
             "Programs Removed Successfully.",
-            f"**Current Programs**:\n {message}",
+            f"**Current Programs**:\n {message}"
+            if message
+            else f"All of your programs have been removed.",
             "light_green",
         ),
     ]
@@ -269,7 +271,7 @@ async def programs(ctx, bot, user: str) -> list:
     )
 
     # Empty list
-    if programs_list is None:
+    if programs_list[1] is None or programs_list[1] == "":
         return [
             False,
             create_embed_template(
