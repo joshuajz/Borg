@@ -4,7 +4,7 @@ import sys
 import re
 
 sys.path.append("../..")
-from commands.programs import programs, programs_add, programs_remove
+from commands.programs import programs, programs_add, programs_remove, programs_edit
 from methods.data import parse_user
 from methods.embed import create_embed
 
@@ -37,7 +37,6 @@ class Classic_Programs(commands.Cog):
                 return user, content
 
         if subcommand == "add" or subcommand == "a":
-
             #: !programs add Queens CS
             if len(content) == 2:
                 embed = create_embed(
@@ -76,6 +75,7 @@ class Classic_Programs(commands.Cog):
                     "orange",
                 )
                 await ctx.send(embed=embed)
+                return
 
             content = content[2::]
 
@@ -84,6 +84,28 @@ class Classic_Programs(commands.Cog):
                 user = ctx.author.id
 
             result = await programs_remove(ctx, " ".join(content), user)
+            await ctx.send(embed=result[1])
+
+        elif subcommand == "edit" or subcommand == "e":
+            #: !command edit 1 New Program
+            if len(content) > 4:
+                embed = create_embed(
+                    "Command: !programs edit",
+                    "**Description**: Allows you to edit a program in your list.  Provide the number for the program, and the new text.\n**Usage**:\n!programs edit 1 Queens CS\n!programs edit 1 Queens CS <@749359897405161522>",
+                    "orange",
+                )
+                await ctx.send(embed=embed)
+                return
+
+            content = content[2::]
+
+            user, content = grab_user(content)
+            if user is None:
+                user = ctx.author.id
+            before = content[0]
+            after = " ".join(content[1::])
+
+            result = await programs_edit(ctx, self.bot, user, before, after)
             await ctx.send(embed=result[1])
 
         attempt_user = parse_user(subcommand)

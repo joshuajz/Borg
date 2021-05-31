@@ -209,6 +209,14 @@ async def programs_edit(ctx, client, user, before, after):
         .fetchone()
     )[0].split("\n")
 
+    if len(programs) == 0 or (len(programs) == 1 and programs[0] == ""):
+        return [
+            False,
+            create_embed_template(
+                "No Programs", "You have no programs to edit.", "error"
+            ),
+        ]
+
     # Entire programs list
     p = {}
     i = 1
@@ -225,7 +233,8 @@ async def programs_edit(ctx, client, user, before, after):
                 "error",
             ),
         ]
-
+    print(p)
+    print((await client.fetch_user(user)).mention, p[before], after)
     # Create a verification Embed
     embed = create_embed("Programs (Edit) Verification Required", "", "magenta")
     add_field(embed, "User", f"{(await client.fetch_user(user)).mention}", True)
