@@ -88,7 +88,7 @@ class Classic_Programs(commands.Cog):
 
         elif subcommand == "edit" or subcommand == "e":
             #: !command edit 1 New Program
-            if len(content) > 4:
+            if len(content) < 4:
                 embed = create_embed(
                     "Command: !programs edit",
                     "**Description**: Allows you to edit a program in your list.  Provide the number for the program, and the new text.\n**Usage**:\n!programs edit 1 Queens CS\n!programs edit 1 Queens CS <@749359897405161522>",

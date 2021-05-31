@@ -78,7 +78,7 @@ class Slash_Programs(commands.Cog):
 
         channel = channel.id
 
-        result = await programs_setup(ctx, self.bot, channel)
+        result = await programs_setup(ctx, channel)
         await ctx.send(embed=result[1], hidden=True)
 
     @cog_ext.cog_subcommand(

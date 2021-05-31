@@ -129,6 +129,19 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
         val for key, val in all_programs.items() if key not in remove_programs
     ]
 
+    if len(new_programs) == 0:
+        db["db"].execute("DELETE FROM programs WHERE user_id = (?)", (user_id,))
+        db["con"].commit()
+
+        return [
+            True,
+            create_embed(
+                "Programs removed Successfully.",
+                "You now have no programs!",
+                "light_green",
+            ),
+        ]
+
     # Message with the current programs list
     message = ""
     len_programs = len(new_programs)
@@ -209,14 +222,6 @@ async def programs_edit(ctx, client, user, before, after):
         .fetchone()
     )[0].split("\n")
 
-    if len(programs) == 0 or (len(programs) == 1 and programs[0] == ""):
-        return [
-            False,
-            create_embed_template(
-                "No Programs", "You have no programs to edit.", "error"
-            ),
-        ]
-
     # Entire programs list
     p = {}
     i = 1
@@ -280,7 +285,7 @@ async def programs(ctx, bot, user: str) -> list:
     )
 
     # Empty list
-    if programs_list[1] is None or programs_list[1] == "":
+    if programs_list is None:
         return [
             False,
             create_embed_template(
