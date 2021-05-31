@@ -1,7 +1,7 @@
 import discord
 from methods.database import database_connection
 from methods.embed import create_embed, add_field, create_embed_template
-from methods.data import parse_user
+from methods.data import parse_id
 
 
 async def programs_add(ctx, client, programs: list, user: int) -> list:
@@ -196,7 +196,7 @@ async def programs_edit(ctx, client, user, before, after):
             ),
         ]
 
-    user = parse_user(user)
+    user = parse_id(user)
 
     db = await database_connection(ctx.guild.id)
 
@@ -273,7 +273,7 @@ async def programs(ctx, bot, user: str) -> list:
         ]
 
     # Gets the user's id
-    user = parse_user(user)
+    user = parse_id(user)
 
     db = await database_connection(ctx.guild.id)
 
@@ -326,7 +326,7 @@ async def programs_setup(ctx, channel: int):
     if not channel:
         return [False, "Invalid channel."]
 
-    db = await database_connection(ctx.guild_id)
+    db = await database_connection(ctx.guild.id)
 
     db["db"].execute("UPDATE settings SET programs_channel = (?)", (channel,))
     db["con"].commit()
@@ -379,7 +379,7 @@ async def programs_reaction_handling(ctx, client):
             await m.delete()
             return True
         elif ctx.emoji.name == "✅":
-            user_id = parse_user(embeds.fields[0].value)
+            user_id = parse_id(embeds.fields[0].value)
 
             if not user_id:
                 return True
@@ -471,7 +471,7 @@ async def programs_reaction_handling(ctx, client):
             return True
         elif ctx.emoji.name == "✅":
             # User
-            user_id = parse_user(embeds.fields[0].value)
+            user_id = parse_id(embeds.fields[0].value)
 
             if not user_id:
                 await m.delete()

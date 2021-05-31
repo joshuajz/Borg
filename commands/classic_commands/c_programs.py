@@ -4,9 +4,15 @@ import sys
 import re
 
 sys.path.append("../..")
-from commands.programs import programs, programs_add, programs_remove, programs_edit
-from methods.data import parse_user
-from methods.embed import create_embed
+from commands.programs import (
+    programs,
+    programs_add,
+    programs_remove,
+    programs_edit,
+    programs_setup,
+)
+from methods.data import parse_id
+from methods.embed import create_embed, create_embed_template
 
 
 class Classic_Programs(commands.Cog):
@@ -33,7 +39,7 @@ class Classic_Programs(commands.Cog):
                 return None, content
             else:
                 content = " ".join(content).replace(user, "").split(" ")
-                user = parse_user(user.group())
+                user = parse_id(user.group())
                 return user, content
 
         if subcommand == "add" or subcommand == "a":
@@ -108,15 +114,35 @@ class Classic_Programs(commands.Cog):
             result = await programs_edit(ctx, self.bot, user, before, after)
             await ctx.send(embed=result[1])
 
-        attempt_user = parse_user(subcommand)
-        if attempt_user:
-            user_id = attempt_user
+        elif subcommand == "setup" or subcommand == "s":
+            #: !command setup <#846962522065993768>
+            if len(content) == 2 or len(content) > 3:
+                embed = create_embed(
+                    "Command: !programs setup",
+                    "**Description**: Allows an administrator to setup a programs verification channel.\n**Usage**:\n!programs setup <@799848795050606607>",
+                    "orange",
+                )
+                await ctx.send(embed=embed)
+                return
+
+            channel_id = parse_id(content[2])
+            if not channel_id:
+                embed = create_embed_template("Invalid Setup Channel", "", "error")
+                await ctx.send(embed=embed)
+                return
+
+            result = await programs_setup(ctx, channel_id)
+            await ctx.send(embed=result[1])
         else:
-            user_id = ctx.guild.get_member_named(subcommand).id
+            attempt_user = parse_id(subcommand)
+            if attempt_user:
+                user_id = attempt_user
+            else:
+                user_id = ctx.guild.get_member_named(subcommand).id
 
-        p = await programs(ctx, self.bot, user_id)
+            p = await programs(ctx, self.bot, user_id)
 
-        await ctx.send(embed=p[1])
+            await ctx.send(embed=p[1])
 
 
 def setup(bot):
