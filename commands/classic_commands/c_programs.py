@@ -110,15 +110,13 @@ class Classic_Programs(commands.Cog):
 
         attempt_user = parse_user(subcommand)
         if attempt_user:
-            user = content[1]
+            user_id = attempt_user
+        else:
+            user_id = ctx.guild.get_member_named(subcommand).id
 
-            user_id = parse_user(user)
-            if not user_id:
-                user_id = ctx.guild.get_member_named(user).id
+        p = await programs(ctx, self.bot, user_id)
 
-            p = await programs(ctx, self.bot, user_id)
-
-            await ctx.send(embed=p[1])
+        await ctx.send(embed=p[1])
 
 
 def setup(bot):
