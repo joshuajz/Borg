@@ -18,7 +18,6 @@ class Classic_Custom_Commands(commands.Cog):
 
     @commands.command(name="commands")
     async def _commands(self, ctx):
-        """!commands -> Lists all of the commands"""
         result = await custom_command_list(self.bot, ctx)
 
         if result != True:
@@ -26,11 +25,8 @@ class Classic_Custom_Commands(commands.Cog):
 
     @commands.command(name="command")
     async def _command(self, ctx):
-        """Classic Commands for the rest of the commands -> !commands add, !commands remove"""
-
+        # ex: !command add
         msg = ctx.message.content.split(" ")
-
-        # Invalid arguments for the commands, display them all
         if len(msg) == 1:
             embed = create_embed(
                 "Command: !command",
@@ -39,13 +35,9 @@ class Classic_Custom_Commands(commands.Cog):
             )
             await ctx.send(embed=embed)
         else:
-            # Subcommand (ie. !commands add -> subcommand = add)
             subcommand = msg[1].strip()
-
             if subcommand == "add" or subcommand == "a":
-                # ex: !command add hello hello
-
-                # We have enough arguments for adding a command
+                #: !command add hello hello
                 if len(msg) >= 4:
                     command = msg[2][1::] if msg[2][0] == "!" else msg[2]
                     if msg[-1].startswith("image="):
