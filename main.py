@@ -1,7 +1,7 @@
 import discord
 import os
 import traceback
-from methods.database import check_filesystem, create_filesystem
+import main_database
 from dotenv import load_dotenv
 from discord.ext import commands
 from discord_slash import SlashCommand
@@ -33,8 +33,6 @@ bot.remove_command("help")
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}.")
-
-    await check_filesystem(bot)
 
 
 @bot.listen()

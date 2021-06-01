@@ -26,21 +26,10 @@ def create_database(password: str, port="5432"):
         cursor.execute("""CREATE database borg""")
     except:
         print("Database Already Created.")
-        return True
+        return database_connection(password, port)
 
     # Connect to the borg database
-    con = psycopg2.connect(
-        database="borg",
-        user="postgres",
-        password=password,
-        host="localhost",
-        port=port,
-    )
-
-    cursor = con.cursor()
-
-    # Auto commit changes
-    con.autocommit = True
+    con, cursor = database_connection(password, port)
 
     # Create the tables
     commands = [
@@ -75,19 +64,25 @@ def create_database(password: str, port="5432"):
     ]
 
     for command in commands:
-        print(command)
         cursor.execute(command)
 
-    con.close()
-    return True
+    return con, cursor
+
+
+def database_connection(password: str, port="5432"):
+    con = psycopg2.connect(
+        database="borg", user="postgres", password=password, host="localhost", port=port
+    )
+    con.autocommit = True
+    cursor = con.cursor()
+    return (con, cursor)
 
 
 class Guild_Info:
-    def __init__(self, guild_id: int, db: psycop2.Connection, cursor: psycop2.Cursor):
+    def __init__(self, guild_id: int, db, cursor):
         self.guild_id = guild_id
         self.db = db
         self.cursor = cursor
-        self.grab_settings()
 
     def grab_settings(self):
         grab_info = self.cursor.execute(
@@ -97,7 +92,6 @@ class Guild_Info:
             "programs_channel": grab_info[1],
             "course_default_school": grab_info[2],
         }
-        self.settings = settings
         return settings
 
     def grab_welcome(self):
@@ -109,7 +103,6 @@ class Guild_Info:
             "message": grab_info[2],
             "enabled": grab_info[3],
         }
-        self.welcome = welcome
         return welcome
 
     def grab_commands(self):
@@ -117,7 +110,6 @@ class Guild_Info:
             "SELECT command, output, image FROM custom_commands WHERE guild_id = %i",
             (self.guild_id,),
         ).fetchall()
-        self.commands = grab_commands
         return grab_commands
 
     def grab_roles(self):
@@ -125,7 +117,6 @@ class Guild_Info:
             "SELECT role_id, command FROM command_roles WHERE guild_id = %i",
             (self.guild_id,),
         ).fetchall()
-        self.roles = grab_roles
         return grab_roles
 
     def grab_programs(self, user_id: int):
