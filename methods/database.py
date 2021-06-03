@@ -95,12 +95,16 @@ class Guild_Info:
     def grab_settings(self):
         grab_info = self.cursor.execute(
             "SELECT * FROM settings WHERE user_id = %s", (self.guild_id,)
-        ).fetchone()
-        settings = {
-            "programs_channel": grab_info[1],
-            "course_default_school": grab_info[2],
-        }
-        return settings
+        )
+        try:
+            grab_info = self.cursor.fetchone()
+            settings = {
+                "programs_channel": grab_info[1],
+                "course_default_school": grab_info[2],
+            }
+            return settings
+        except:
+            return None
 
     def grab_welcome(self):
         grab_info = self.cursor.execute(
@@ -114,16 +118,25 @@ class Guild_Info:
         return welcome
 
     def grab_commands(self):
-        grab = self.cursor.execute(
+        self.cursor.execute(
             "SELECT command, output, image FROM custom_commands WHERE guild_id = %s",
             (self.guild_id,),
         )
-        return self.cursor.fetchall()
+        try:
+            return self.cursor.fetchall()
+        except:
+            return None
 
     def add_command(self, name, description, image=None):
         self.cursor.execute(
             "INSERT INTO custom_commands VALUES (%s, %s, %s, %s)",
             (self.guild_id, name, description, image),
+        )
+
+    def remove_command(self, command):
+        self.cursor.execute(
+            "DELETE FROM custom_commands WHERE guild_id = %s AND command = %s",
+            (self.guild.id, command),
         )
 
     def grab_roles(self):

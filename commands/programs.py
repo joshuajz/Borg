@@ -1,5 +1,5 @@
 import discord
-from methods.database import database_connection
+from methods.database import Guild_Info
 from methods.embed import create_embed, add_field, create_embed_template
 from methods.data import parse_id
 
@@ -10,11 +10,8 @@ async def programs_add(ctx, client, programs: list, user: int) -> list:
     db = await database_connection(ctx.guild.id)
 
     # Channel for verification
-    programs_channel = (
-        db["db"].execute("SELECT programs_channel FROM settings").fetchone()[0]
-    )
-
-    if programs_channel is None:
+    settings = db.grab_settings()
+    if settings is None or settings["programs_channel"] is None:
         return [
             False,
             create_embed_template(
@@ -23,8 +20,7 @@ async def programs_add(ctx, client, programs: list, user: int) -> list:
                 "error",
             ),
         ]
-
-    programs_channel = int(programs_channel)
+    programs_channel = settings["programs_channel"]
 
     # Creates an embed
     embed = create_embed("Programs Verification Required", "", "magenta")
@@ -79,12 +75,14 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
     else:
         user_id = ctx.author.id
 
-    db = await database_connection(ctx.guild.id)
+    db = Guild_Info(ctx.guild.id)
 
     # Deletes ALL the programs
     if programs.lower() in ["*", "all"]:
-        db["db"].execute("DELETE FROM programs WHERE user_id = (?)", (user_id,))
-        db["con"].commit()
+        db.cursor.execute(
+            "DELETE FROM programs WHERE guild_id = %s AND user_id = %s",
+            (ctx.guild.id, user_id),
+        )
 
         return [
             True,
@@ -113,14 +111,7 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
     # All programs
     all_programs = {}
     i = 1
-    for program in (
-        db["db"]
-        .execute(
-            "SELECT description FROM programs WHERE user_id = (?)", (int(user_id),)
-        )
-        .fetchone()[0]
-        .split("\n")
-    ):
+    for program in db.grab_programs(user_id).split("\n"):
         all_programs[i] = program
         i += 1
 
@@ -130,8 +121,10 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
     ]
 
     if len(new_programs) == 0:
-        db["db"].execute("DELETE FROM programs WHERE user_id = (?)", (user_id,))
-        db["con"].commit()
+        db.cursor(
+            "DELETE FROM programs WHERE guild_id = %s AND user_id = %s",
+            (ctx.guild.id, user_id),
+        )
 
         return [
             True,
@@ -148,10 +141,10 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
     for program in range(len_programs):
         message += new_programs[program] + ("\n" if program != len_programs - 1 else "")
 
-    db["db"].execute(
-        "UPDATE programs SET description = (?) WHERE user_id = (?)", (message, user_id)
+    db.cursor.execute(
+        "UPDATE programs SET description = %s WHERE guild_id = %s AND user_id = %s",
+        (message, ctx.guild.id, user_id),
     )
-    db["con"].commit()
 
     return [
         True,
@@ -198,15 +191,11 @@ async def programs_edit(ctx, client, user, before, after):
 
     user = parse_id(user)
 
-    db = await database_connection(ctx.guild.id)
+    db = Guild_Info(ctx.guild.id)
 
     # Channel for verification
-    programs_channel = (
-        db["db"].execute("SELECT programs_channel FROM settings").fetchone()[0]
-    )
-
-    # Check
-    if programs_channel is None:
+    settings = db.grab_settings()
+    if settings is None or settings["programs_channel"] is None:
         return [
             False,
             create_embed_template(
@@ -215,10 +204,11 @@ async def programs_edit(ctx, client, user, before, after):
                 "error",
             ),
         ]
+    programs_channel = settings["programs_channel"]
 
     programs = (
         db["db"]
-        .execute("SELECT description FROM programs WHERE user_id = (?)", (user,))
+        .execute("SELECT description FROM programs WHERE user_id = %s", (user,))
         .fetchone()
     )[0].split("\n")
 
@@ -238,8 +228,7 @@ async def programs_edit(ctx, client, user, before, after):
                 "error",
             ),
         ]
-    print(p)
-    print((await client.fetch_user(user)).mention, p[before], after)
+
     # Create a verification Embed
     embed = create_embed("Programs (Edit) Verification Required", "", "magenta")
     add_field(embed, "User", f"{(await client.fetch_user(user)).mention}", True)
@@ -275,14 +264,10 @@ async def programs(ctx, bot, user: str) -> list:
     # Gets the user's id
     user = parse_id(user)
 
-    db = await database_connection(ctx.guild.id)
+    db = Guild_Info(ctx.guild.id)
 
     # Grabs all of the programs
-    programs_list = (
-        db["db"]
-        .execute("SELECT * FROM programs WHERE user_id = (?)", (user,))
-        .fetchone()
-    )
+    programs_list = db.grab_programs(user)
 
     # Empty list
     if programs_list is None:
@@ -326,10 +311,11 @@ async def programs_setup(ctx, channel: int):
     if not channel:
         return [False, "Invalid channel."]
 
-    db = await database_connection(ctx.guild.id)
-
-    db["db"].execute("UPDATE settings SET programs_channel = (?)", (channel,))
-    db["con"].commit()
+    db = Guild_Info(ctx.guild.id)
+    db.cursor.execute(
+        "UPDATE settings SET programs_channel = %s WHERE guild_id = %s",
+        (channel, ctx.guild.id),
+    )
 
     return [
         "True",
@@ -342,18 +328,14 @@ async def programs_setup(ctx, channel: int):
 async def programs_reaction_handling(ctx, client):
     """Handles reaction adding for programs commands."""
 
-    db = await database_connection(ctx.guild_id)
+    db = Guild_Info(ctx.guild.id)
 
     # Grabs the verification channel
-    mod_channel_id = (
-        db["db"].execute("SELECT programs_channel FROM settings").fetchone()[0]
-    )
-
-    # No mod channel
-    if mod_channel_id is None:
+    settings = db.grab_settings()
+    if settings is None or settings["programs_channel"]:
         return False
 
-    mod_channel_id = int(mod_channel_id)
+    mod_channel_id = settings["programs_channel"]
 
     if mod_channel_id != ctx.channel_id:
         return False
@@ -387,15 +369,12 @@ async def programs_reaction_handling(ctx, client):
             # Checks to see if the user already has a programs list
 
             # If they don't
-            if (
-                db["db"]
-                .execute(
-                    "SELECT COUNT(user_id) FROM programs WHERE user_id = (?)",
-                    (user_id,),
-                )
-                .fetchone()[0]
-                != 1
-            ):
+            db.cursor.execute(
+                "SELECT COUNT(user_id) FROM programs WHERE guild_id = %s AND user_id = %s",
+                (ctx.guild.id, user_id),
+            )
+            count = db.cursor.fetchone()[0]
+            if count != 1:
                 # Delete the message
                 programs = embeds.fields[1].value
                 await m.delete()
@@ -404,11 +383,11 @@ async def programs_reaction_handling(ctx, client):
                     return False
 
                 # Add the programs
-                db["db"].execute(
-                    "INSERT INTO programs (user_id, description) VALUES (?, ?)",
-                    (user_id, programs),
+                db.cusor.execute(
+                    "INSERT INTO programs user_id, description VALUES %s %s WHERE guild_id = %s",
+                    (user_id, programs, ctx.guild.id),
                 )
-                db["con"].commit()
+
             # If they do
             else:
                 # Delete the message
@@ -419,14 +398,7 @@ async def programs_reaction_handling(ctx, client):
                     return False
 
                 # Grabs the current programs
-                current_programs = (
-                    db["db"]
-                    .execute(
-                        "SELECT description FROM programs WHERE user_id = (?)",
-                        (user_id,),
-                    )
-                    .fetchone()
-                )[0]
+                current_programs = db.grab_programs(user_id)
 
                 current_programs += "\n"
 
@@ -439,11 +411,10 @@ async def programs_reaction_handling(ctx, client):
                     )
 
                 # Updates the database to the newer longer version
-                db["db"].execute(
-                    "UPDATE programs SET description = ? WHERE user_id = ?",
-                    (current_programs, user_id),
+                db.cursor.execute(
+                    "UPDATE programs SET description = %s WHERE guild_id = %s AND user_id = %s",
+                    (current_programs, ctx.guild.id, user_id),
                 )
-                db["con"].commit()
 
                 # Grabs the user & makes a DM channel
                 user = client.get_user(user_id)
@@ -489,14 +460,7 @@ async def programs_reaction_handling(ctx, client):
                 return True
 
             # Grabs current programs
-            current_programs = (
-                db["db"]
-                .execute(
-                    "SELECT description FROM programs WHERE user_id = (?)",
-                    (user_id,),
-                )
-                .fetchone()
-            )[0]
+            current_programs = db.grab_programs(user_id)
 
             # All programs into a dictionary
             programs = {}
@@ -516,11 +480,10 @@ async def programs_reaction_handling(ctx, client):
                 final_programs += p_values[i] + ("\n" if i + 1 != len_p_values else "")
 
             # Update in the databse
-            db["db"].execute(
-                "UPDATE programs SET description = ? WHERE user_id = ?",
-                (final_programs, user_id),
+            db.cursor.execute(
+                "UPDATE programs SET description = %s WHERE guild_id = %s AND user_id = %s",
+                (final_programs, ctx.guild.id, user_id),
             )
-            db["con"].commit()
 
             # Open a DM
             user = client.get_user(user_id)

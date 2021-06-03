@@ -172,10 +172,7 @@ async def custom_command_remove(ctx, command: str) -> list:
         command_delete = db.cursor.fetchone()
 
         # Deletes
-        db.cursor.execute(
-            "DELETE FROM custom_commands WHERE guild_id = %s AND command = %s",
-            (ctx.guild.id, command),
-        )
+        db.remove_command(command)
 
         return [
             True,
