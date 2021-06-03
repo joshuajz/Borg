@@ -1,10 +1,10 @@
 import discord
 import os
 import traceback
-import main_database
 from dotenv import load_dotenv
 from discord.ext import commands
 from discord_slash import SlashCommand
+from methods.database import create_database
 from commands.commands import custom_command_handling
 from commands.programs import programs_reaction_handling
 from commands.welcome import welcome_handling
@@ -32,6 +32,12 @@ bot.remove_command("help")
 
 @bot.event
 async def on_ready():
+    port = os.environ.get("database_port")
+    if port:
+        create_database(os.environ.get("database_password"), port=port)
+    else:
+        create_database(os.environ.get("database_password"))
+
     print(f"Logged in as {bot.user}.")
 
 
@@ -73,11 +79,6 @@ async def on_raw_reaction_add(ctx):
 @bot.event
 async def on_member_join(ctx):
     await welcome_handling(ctx, bot)
-
-
-@bot.event
-async def on_guild_join(guild):
-    await create_filesystem(guild)
 
 
 for cog in slash_cogs:

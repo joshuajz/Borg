@@ -79,14 +79,22 @@ def database_connection(password: str, port="5432"):
 
 
 class Guild_Info:
-    def __init__(self, guild_id: int, db, cursor):
+    def __init__(self, guild_id: int):
         self.guild_id = guild_id
-        self.db = db
-        self.cursor = cursor
+        load_dotenv()
+        port = os.environ.get("database_port")
+        if port:
+            result = database_connection(
+                os.environ.get("database_password"),
+                port=os.environ.get("database_port"),
+            )
+        else:
+            result = database_connection(os.environ.get("database_password"))
+        self.db, self.cursor = result
 
     def grab_settings(self):
         grab_info = self.cursor.execute(
-            "SELECT * FROM settings WHERE user_id = %i", (self.guild_id,)
+            "SELECT * FROM settings WHERE user_id = %s", (self.guild_id,)
         ).fetchone()
         settings = {
             "programs_channel": grab_info[1],
@@ -96,7 +104,7 @@ class Guild_Info:
 
     def grab_welcome(self):
         grab_info = self.cursor.execute(
-            "SELECT * FROM welcome WHERE user_id = %i", (self.guild_id,)
+            "SELECT * FROM welcome WHERE user_id = %s", (self.guild_id,)
         ).fetchone()
         welcome = {
             "channel": grab_info[1],
@@ -106,22 +114,28 @@ class Guild_Info:
         return welcome
 
     def grab_commands(self):
-        grab_commands = self.cursor.execute(
-            "SELECT command, output, image FROM custom_commands WHERE guild_id = %i",
+        grab = self.cursor.execute(
+            "SELECT command, output, image FROM custom_commands WHERE guild_id = %s",
             (self.guild_id,),
-        ).fetchall()
-        return grab_commands
+        )
+        return self.cursor.fetchall()
+
+    def add_command(self, name, description, image=None):
+        self.cursor.execute(
+            "INSERT INTO custom_commands VALUES (%s, %s, %s, %s)",
+            (self.guild_id, name, description, image),
+        )
 
     def grab_roles(self):
         grab_roles = self.cursor.execute(
-            "SELECT role_id, command FROM command_roles WHERE guild_id = %i",
+            "SELECT role_id, command FROM command_roles WHERE guild_id = %s",
             (self.guild_id,),
         ).fetchall()
         return grab_roles
 
     def grab_programs(self, user_id: int):
         grab_programs = self.cursor.execute(
-            "SELECT description FROM programs WHERE guild_id = %i AND user_id = %i",
+            "SELECT description FROM programs WHERE guild_id = %s AND user_id = %s",
             (self.guild_id, user_id),
         ).fetchone()
         return grab_programs

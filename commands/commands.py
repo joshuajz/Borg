@@ -1,7 +1,7 @@
 import discord
 import asyncio
 from urlextract import URLExtract
-from methods.database import database_connection
+from methods.database import Guild_Info
 from typing import List
 from methods.embed import create_embed, create_embed_template
 from methods.paged_command import page_command
@@ -11,31 +11,32 @@ async def custom_command_list(bot, ctx) -> list:
     """Returns the list of custom commands."""
 
     # Database
-    db = await database_connection(ctx.guild.id)
+    db = Guild_Info(ctx.guild.id)
 
     # List of commands
-    command_list = [
-        i[0] for i in db["db"].execute("SELECT command FROM custom_commands").fetchall()
-    ]
+    grab_commands = db.grab_commands()
+
+    if grab_commands is None:
+        return [
+            False,
+            create_embed_template(
+                "No Commands",
+                "There are currently no commands, ask an admin to use /command create or !command add.",
+                "error",
+            ),
+        ]
+
+    command_list = [i[0] for i in grab_commands]
 
     # Length of command list
     command_list_length = len(command_list)
 
     message = ""
-    if command_list_length >= 1:
-        for i in range(command_list_length):
-            message += (
-                "!" + command_list[i] + ("\n" if i + 1 != command_list_length else "")
-            )
-    else:
-        return [
-            False,
-            create_embed_template(
-                "No Commands",
-                "There are currently no commands, ask an admin to use /commands create or !commands add.",
-                "error",
-            ),
-        ]
+
+    for i in range(command_list_length):
+        message += (
+            "!" + command_list[i] + ("\n" if i + 1 != command_list_length else "")
+        )
 
     await page_command(ctx, bot, message.split("\n"), "Commands")
 
@@ -102,22 +103,20 @@ async def custom_command_add(ctx, name: str, description: str, image: str or Non
     else:
         urls = None
 
-    db = await database_connection(ctx.guild.id)
+    db = Guild_Info(ctx.guild.id)
 
     # Find all of the current commands
-    command_list = [
-        i[0] for i in db["db"].execute("SELECT command FROM custom_commands").fetchall()
-    ]
+    grab_commands = db.grab_commands()
 
-    # Ensure the current command is unique
-    if name in command_list:
-        return [False, "There is already a command with that denominator."]
+    if grab_commands is not None:
+        command_list = [i[0] for i in db.grab_commands()]
+
+        # Ensure the current command is unique
+        if name in command_list:
+            return [False, "There is already a command with that denominator."]
 
     # Add it to the database
-    db["db"].execute(
-        "INSERT INTO custom_commands VALUES (?, ?, ?)", (name, description, image)
-    )
-    db["con"].commit()
+    db.add_command(name, description, image)
 
     return [
         True,
@@ -143,28 +142,40 @@ async def custom_command_remove(ctx, command: str) -> list:
             ),
         ]
 
-    db = await database_connection(ctx.guild.id)
+    db = Guild_Info(ctx.guild.id)
 
     # Removes the ! from the command -> !hello turns into hello
     if command[0] == "!":
         command = command[1::]
 
     # Grabs all of the commands
-    command_list = [
-        i[0] for i in db["db"].execute("SELECT command FROM custom_commands").fetchall()
-    ]
+    grab_commands = db.grab_commands()
+    if grab_commands is None:
+        return [
+            False,
+            create_embed_template(
+                "Invalid Command",
+                "This server has no commands therefore you cannot remove one.",
+                "error",
+            ),
+        ]
+
+    command_list = [i[0] for i in grab_commands]
 
     if command in command_list:
         # Grabs the info for the command to be deleted
-        command_delete = (
-            db["db"]
-            .execute("SELECT * FROM custom_commands WHERE command = (?)", (command,))
-            .fetchone()
+        command_delete = db.cursor.execute(
+            "SELECT command, output, image FROM custom_commands WHERE guild_id = %s AND command = %s",
+            (ctx.guild.id, command),
         )
 
-        # Deletes & Commits
-        db["db"].execute("DELETE FROM custom_commands WHERE command = (?)", (command,))
-        db["con"].commit()
+        command_delete = db.cursor.fetchone()
+
+        # Deletes
+        db.cursor.execute(
+            "DELETE FROM custom_commands WHERE guild_id = %s AND command = %s",
+            (ctx.guild.id, command),
+        )
 
         return [
             True,
@@ -186,12 +197,13 @@ async def custom_command_remove(ctx, command: str) -> list:
 async def custom_command_handling(ctx, command: str):
     """Handling for custom commands -> Calls the commands"""
 
-    db = await database_connection(ctx.guild.id)
+    db = Guild_Info(ctx.guild.id)
 
     # List of commands
-    command_list = [
-        i for i in db["db"].execute("SELECT * FROM custom_commands").fetchall()
-    ]
+    command_list = db.grab_commands()
+
+    if command_list is None:
+        return
 
     # Checks
     for c in command_list:
