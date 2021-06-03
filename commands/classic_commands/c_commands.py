@@ -33,7 +33,7 @@ class Classic_Custom_Commands(commands.Cog):
         if len(msg) == 1:
             embed = create_embed(
                 "Command: !command",
-                "**Description**: Allows you to manage commands.\n**Sub Commands**:\n!command add - Adds a command\n!command remove - Removes a command\n!commands - Lists the commands.",
+                "**Description**: Allows you to manage commands.\n**Sub Commands**:\n!command add - Adds a command\n!command remove - Removes a command\n!commands - Lists the commands.\n!commands setup - Allows an admin to setup a programs confirmation channel.",
                 "orange",
             )
             await ctx.send(embed=embed)

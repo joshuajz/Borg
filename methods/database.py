@@ -94,7 +94,7 @@ class Guild_Info:
 
     def grab_settings(self):
         grab_info = self.cursor.execute(
-            "SELECT * FROM settings WHERE user_id = %s", (self.guild_id,)
+            "SELECT * FROM settings WHERE guild_id = %s", (self.guild_id,)
         )
         try:
             grab_info = self.cursor.fetchone()
@@ -147,8 +147,17 @@ class Guild_Info:
         return grab_roles
 
     def grab_programs(self, user_id: int):
-        grab_programs = self.cursor.execute(
+        self.cursor.execute(
             "SELECT description FROM programs WHERE guild_id = %s AND user_id = %s",
             (self.guild_id, user_id),
-        ).fetchone()
-        return grab_programs
+        )
+        try:
+            return (self.cursor.fetchone())[0]
+        except:
+            return None
+
+    def create_default_settings(self):
+        self.cursor.execute(
+            "INSERT INTO settings(guild_id, programs_channel, courses_default_school) VALUES (%s, %s, %s)",
+            (self.guild_id, None, None),
+        )

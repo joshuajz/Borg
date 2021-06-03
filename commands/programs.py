@@ -7,7 +7,7 @@ from methods.data import parse_id
 async def programs_add(ctx, client, programs: list, user: int) -> list:
     """Creates a request to add programs for a user"""
 
-    db = await database_connection(ctx.guild.id)
+    db = Guild_Info(ctx.guild.id)
 
     # Channel for verification
     settings = db.grab_settings()
@@ -206,11 +206,7 @@ async def programs_edit(ctx, client, user, before, after):
         ]
     programs_channel = settings["programs_channel"]
 
-    programs = (
-        db["db"]
-        .execute("SELECT description FROM programs WHERE user_id = %s", (user,))
-        .fetchone()
-    )[0].split("\n")
+    programs = db.grab_programs(user).split("\n")
 
     # Entire programs list
     p = {}
@@ -280,7 +276,7 @@ async def programs(ctx, bot, user: str) -> list:
             ),
         ]
 
-    programs_list = programs_list[1].split("\n")
+    programs_list = programs_list.split("\n")
 
     # Creates the message
     message = ""
@@ -328,11 +324,11 @@ async def programs_setup(ctx, channel: int):
 async def programs_reaction_handling(ctx, client):
     """Handles reaction adding for programs commands."""
 
-    db = Guild_Info(ctx.guild.id)
+    db = Guild_Info(ctx.guild_id)
 
     # Grabs the verification channel
     settings = db.grab_settings()
-    if settings is None or settings["programs_channel"]:
+    if settings is None or settings["programs_channel"] is None:
         return False
 
     mod_channel_id = settings["programs_channel"]
@@ -371,7 +367,7 @@ async def programs_reaction_handling(ctx, client):
             # If they don't
             db.cursor.execute(
                 "SELECT COUNT(user_id) FROM programs WHERE guild_id = %s AND user_id = %s",
-                (ctx.guild.id, user_id),
+                (ctx.guild_id, user_id),
             )
             count = db.cursor.fetchone()[0]
             if count != 1:
@@ -383,9 +379,9 @@ async def programs_reaction_handling(ctx, client):
                     return False
 
                 # Add the programs
-                db.cusor.execute(
-                    "INSERT INTO programs user_id, description VALUES %s %s WHERE guild_id = %s",
-                    (user_id, programs, ctx.guild.id),
+                db.cursor.execute(
+                    "INSERT INTO programs VALUES (%s, %s, %s)",
+                    (ctx.guild_id, user_id, programs),
                 )
 
             # If they do
@@ -399,7 +395,7 @@ async def programs_reaction_handling(ctx, client):
 
                 # Grabs the current programs
                 current_programs = db.grab_programs(user_id)
-
+                print(current_programs)
                 current_programs += "\n"
 
                 # Adds the additions
@@ -413,7 +409,7 @@ async def programs_reaction_handling(ctx, client):
                 # Updates the database to the newer longer version
                 db.cursor.execute(
                     "UPDATE programs SET description = %s WHERE guild_id = %s AND user_id = %s",
-                    (current_programs, ctx.guild.id, user_id),
+                    (current_programs, ctx.guild_id, user_id),
                 )
 
                 # Grabs the user & makes a DM channel
@@ -466,6 +462,7 @@ async def programs_reaction_handling(ctx, client):
             programs = {}
             i = 1
             for p in current_programs.split("\n"):
+
                 if p == program_change:
                     programs[i] = programs_newmsg
                 else:
@@ -482,7 +479,7 @@ async def programs_reaction_handling(ctx, client):
             # Update in the databse
             db.cursor.execute(
                 "UPDATE programs SET description = %s WHERE guild_id = %s AND user_id = %s",
-                (final_programs, ctx.guild.id, user_id),
+                (final_programs, ctx.guild_id, user_id),
             )
 
             # Open a DM
