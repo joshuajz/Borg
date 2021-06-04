@@ -1,108 +1,213 @@
-import sqlite3
+import psycopg2
+from dotenv import load_dotenv
 import os
-from shutil import copyfile
-import discord
-from typing import Dict
-
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-os.chdir(ROOT_DIR)
-SERVERS_DIR = f"{ROOT_DIR}/servers"
 
 
-async def check_filesystem(client: discord.Client):
-    """Creates the filesystem"""
+def create_database(password: str, port="5432"):
+    # Connect to the default postgres DB
 
-    # Check to see if there is a "servers" directory
-    if os.path.isdir("servers") == False:
-        os.makedirs("servers")
+    print("Creating Database.")
 
-    # Open the "servers" directory
-    os.chdir(SERVERS_DIR)
+    con = psycopg2.connect(
+        database="postgres",
+        user="postgres",
+        password=password,
+        host="localhost",
+        port=port,
+    )
 
-    # List of directory
-    list_dir = os.listdir()
+    # Auto commit changes
+    con.autocommit = True
 
-    for guild in [i for i in client.guilds if str(i.id) not in list_dir]:
-        # Create a folder
-        os.mkdir(str(guild.id))
+    # Create Borg's database
+    cursor = con.cursor()
 
-    # Checks every guild
-    for guild in os.listdir():
-        # List of files in the directory
-        l_dir = os.listdir(guild)
+    try:
+        cursor.execute("""CREATE database borg""")
+    except:
+        print("Database Already Created.")
+        return database_connection(password, port)
 
-        # Creates a database file if there isn't one
-        if "database.db" not in l_dir:
-            db_conn = sqlite3.connect(f"{SERVERS_DIR}/{guild}/database.db")
-            db = db_conn.cursor()
+    # Connect to the borg database
+    con, cursor = database_connection(password, port)
 
-            await create_database({"db": db, "con": db_conn})
-
-
-async def create_database(db: dict) -> bool:
-    db_commands = [
-        "CREATE TABLE reaction_roles ([role_id] int, [message_id] int, [reaction_id] int, [channel_id] int)",
-        "CREATE TABLE normal_roles (role_id int, command text)",
-        "CREATE TABLE custom_commands (command text, output text, image text)",
-        "CREATE TABLE programs (user_id int, description text)",
-        "CREATE TABLE welcome (channel int, message text, enabled bool)",
-        """CREATE TABLE "infractions" (
-        "id"	INTEGER NOT NULL DEFAULT 0 PRIMARY KEY AUTOINCREMENT,
-        "datetime"	TEXT,
-        "length"	TEXT,
-        "type"	TEXT,
-        "user_id"	INTEGER,
-        "moderator_id"	INTEGER,
-        "reason"	TEXT,
-        "active"    BOOL)""",
-        "CREATE TABLE settings (programs_channel text, courses_default_school text)",
+    # Create the tables
+    commands = [
+        """CREATE TABLE custom_commands (
+        guild_id bigint,
+        command text,
+        output text,
+        image text
+    )""",
+        """CREATE TABLE command_roles (
+        guild_id bigint,
+        role_id bigint,
+        command text
+    )""",
+        """CREATE TABLE programs (
+        guild_id bigint,
+        user_id bigint,
+        description text
+    )""",
+        """CREATE TABLE settings (
+        guild_id bigint,
+        programs_channel bigint,
+        courses_default_school varchar(255)
+    )
+    """,
+        """CREATE TABLE welcome (
+        guild_id bigint,
+        channel bigint,
+        message text,
+        enabled boolean
+    )""",
     ]
 
-    for command in db_commands:
-        db["db"].execute(command)
+    for command in commands:
+        cursor.execute(command)
 
-    db["db"].execute(
-        "INSERT INTO welcome VALUES (?, ?, ?)",
-        (
-            None,
-            None,
-            False,
-        ),
+    return con, cursor
+
+
+def database_connection(password: str, port="5432"):
+    con = psycopg2.connect(
+        database="borg", user="postgres", password=password, host="localhost", port=port
     )
-    db["db"].execute("INSERT INTO settings VALUES (?, ?)", (None, None))
-
-    db["con"].commit()
-
-    return True
+    con.autocommit = True
+    cursor = con.cursor()
+    return (con, cursor)
 
 
-async def database_connection(
-    guild: int,
-) -> dict:
-    """Creates a database connection with a guild id"""
+class Guild_Info:
+    def __init__(self, guild_id: int):
+        self.guild_id = guild_id
+        load_dotenv()
+        port = os.environ.get("database_port")
+        if port:
+            result = database_connection(
+                os.environ.get("database_password"),
+                port=os.environ.get("database_port"),
+            )
+        else:
+            result = database_connection(os.environ.get("database_password"))
+        self.db, self.cursor = result
 
-    db_connection = sqlite3.connect(f"{SERVERS_DIR}/{guild}/database.db")
-    db = db_connection.cursor()
+    def grab_settings(self):
+        grab_info = self.cursor.execute(
+            "SELECT * FROM settings WHERE guild_id = %s", (self.guild_id,)
+        )
+        try:
+            grab_info = self.cursor.fetchone()
+            settings = {
+                "programs_channel": grab_info[1],
+                "course_default_school": grab_info[2],
+            }
+            return settings
+        except:
+            return None
 
-    return {"con": db_connection, "db": db}
+    def grab_welcome(self):
+        self.cursor.execute(
+            "SELECT * FROM welcome WHERE user_id = %s", (self.guild_id,)
+        )
+        try:
+            data_pull = self.cursor.fetchone()
+            welcome = {
+                "channel": data_pull[1],
+                "message": data_pull[2],
+                "enabled": data_pull[3],
+            }
+            return welcome
+        except:
+            return None
 
+    def grab_commands(self):
+        self.cursor.execute(
+            "SELECT command, output, image FROM custom_commands WHERE guild_id = %s",
+            (self.guild_id,),
+        )
+        try:
+            return self.cursor.fetchall()
+        except:
+            return None
 
-async def create_filesystem(ctx):
-    """Creates a filesystem for the new server."""
+    def add_command(self, name, description, image=None):
+        self.cursor.execute(
+            "INSERT INTO custom_commands VALUES (%s, %s, %s, %s)",
+            (self.guild_id, name, description, image),
+        )
 
-    guild = ctx.id
+    def remove_command(self, command):
+        self.cursor.execute(
+            "DELETE FROM custom_commands WHERE guild_id = %s AND command = %s",
+            (self.guild.id, command),
+        )
 
-    # Open the "servers" directory
-    os.chdir(SERVERS_DIR)
+    def grab_roles(self):
+        self.cursor.execute(
+            "SELECT role_id, command FROM command_roles WHERE guild_id = %s",
+            (self.guild_id,),
+        )
+        try:
+            roles = self.cursor.fetchall()
+            return roles
+        except:
+            return None
 
-    # List of directory
-    list_dir = os.listdir()
+    def grab_role(self, command=None, role_id=None):
+        if command:
+            self.cursor.execute(
+                "SELECT * FROM command_roles WHERE guild_id = %s AND command = %s",
+                (self.guild_id, command),
+            )
+            try:
+                return self.cursor.fetchone()
+            except:
+                return None
+        elif role_id:
+            self.cursor.execute(
+                "SELECT * FROM command_roles WHERE guild_id = %s AND role_id = %s",
+                (self.guild_id, role_id),
+            )
+            try:
+                return self.cursor.fetchone()
+            except:
+                return None
 
-    if str(guild) not in list_dir:
-        os.mkdir(str(guild))
+    def check_role(self, role_id, command):
+        self.cursor.execute(
+            "SELECT EXISTS(SELECT * FROM command_roles WHERE guild_id = %s AND (role_id = %s OR command = %s))",
+            (self.guild_id, role_id, command),
+        )
+        try:
+            return self.cursor.fetchone()
+        except:
+            return None
 
-    # Creates a database file
-    db_conn = sqlite3.connect(f"{SERVERS_DIR}/{guild}/database.db")
-    db = db_conn.cursor()
+    def add_role(self, role_id, command):
+        self.cursor.execute(
+            "INSERT INTO command_roles VALUES (%s, %s, %s)",
+            (self.guild_id, role_id, command),
+        )
 
-    await create_database({"db": db, "con": db_conn})
+    def remove_role(self, role_id):
+        self.cursor.execute(
+            "DELETE FROM command_roles WHERE guild_id = %s AND role_id = %s",
+            (self.guild_id, role_id),
+        )
+
+    def grab_programs(self, user_id: int):
+        self.cursor.execute(
+            "SELECT description FROM programs WHERE guild_id = %s AND user_id = %s",
+            (self.guild_id, user_id),
+        )
+        try:
+            return (self.cursor.fetchone())[0]
+        except:
+            return None
+
+    def create_default_settings(self):
+        self.cursor.execute(
+            "INSERT INTO settings(guild_id, programs_channel, courses_default_school) VALUES (%s, %s, %s)",
+            (self.guild_id, None, None),
+        )

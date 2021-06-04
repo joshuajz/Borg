@@ -1,5 +1,5 @@
 import discord
-from methods.database import database_connection
+from methods.database import Guild_Info
 from methods.embed import create_embed, add_field
 from methods.paged_command import page_command
 
@@ -10,19 +10,15 @@ async def role_toggle(ctx, role):
     # Grab the user's roles
     user_roles = [i.id for i in ctx.author.roles]
 
-    db = await database_connection(ctx.guild.id)
+    db = Guild_Info(ctx.guild.id)
 
     # Grab this server's role commands
-    role_id = (
-        db["db"]
-        .execute("SELECT role_id FROM normal_roles WHERE command = (?)", (role,))
-        .fetchone()
-    )
+    role_id = db.grab_role(command=role)
 
-    if not role_id:
+    if role_id is None:
         return [False, "Invalid Roles.  Use !roles to see all of the roles."]
 
-    role_id = role_id[0]
+    role_id = role_id[1]
 
     actual_role = ctx.guild.get_role(role_id)
 
@@ -60,12 +56,18 @@ async def role_toggle(ctx, role):
 async def roles(ctx, bot):
     """Lists out this server's roles."""
 
-    db = await database_connection(ctx.guild.id)
+    db = Guild_Info(ctx.guild.id)
 
-    all_roles = [
-        f"!role {i[1]} - {ctx.guild.get_role(i[0]).mention}"
-        for i in db["db"].execute("SELECT * FROM normal_roles").fetchall()
-    ]
+    try:
+        all_roles = [
+            f"!role {i[1]} - {ctx.guild.get_role(i[0]).mention}"
+            for i in db.grab_roles()
+        ]
+    except:
+        return [
+            False,
+            "This server has no roles.  Have an administrator run /roles create.",
+        ]
 
     if len(all_roles) == 0:
         return [
@@ -86,13 +88,9 @@ async def add_role(ctx, name: str, role_id: int):
             hidden=True,
         )
 
-    db = await database_connection(ctx.guild.id)
+    db = Guild_Info(ctx.guild.id)
 
-    if role_id not in [
-        i[0] for i in db["db"].execute("SELECT role_id FROM normal_roles").fetchall()
-    ] and name not in [
-        i[0] for i in db["db"].execute("SELECT command FROM normal_roles").fetchall()
-    ]:
+    if db.check_role(role_id, name):
         for role in ctx.guild.roles:
             if role.name == "Borg" or role.name == "Borg Test":
                 borg_role = {"id": role.id, "position": role.position}
@@ -100,8 +98,7 @@ async def add_role(ctx, name: str, role_id: int):
         actual_role = ctx.guild.get_role(role_id)
 
         if borg_role["position"] > actual_role.position:
-            db["db"].execute("INSERT INTO normal_roles VALUES (?, ?)", (role_id, name))
-            db["con"].commit()
+            db.add_role(role_id, name)
 
             embed = create_embed("Role Added", "", "light_green")
             add_field(embed, "Role", actual_role.mention, True)
@@ -128,23 +125,22 @@ async def remove_role(ctx, role_id: int):
             hidden=True,
         )
 
-    db = await database_connection(ctx.guild.id)
+    db = Guild_Info(ctx.guild.id)
 
-    removal_role = (
-        db["db"]
-        .execute("SELECT * FROM normal_roles WHERE role_id = (?)", (role_id,))
-        .fetchall()[0]
-    )
+    removal_role = db.grab_role(role_id=role_id)
 
-    db["db"].execute(
-        "DELETE FROM normal_roles WHERE role_id = (?)", (int(removal_role[0]),)
-    )
-    db["con"].commit()
+    if removal_role is None:
+        await ctx.channel.send(
+            "There is no command associated with that role in this server.", hidden=True
+        )
+        return
+
+    db.remove_role(role_id)
 
     embed = create_embed("Role Removed", "", "dark_blue")
     add_field(
-        embed, "Role", f"{ctx.guild.get_role(int(removal_role[0])).mention}", True
+        embed, "Role", f"{ctx.guild.get_role(int(removal_role[1])).mention}", True
     )
-    add_field(embed, "Command", f"!role {removal_role[1]}", True)
+    add_field(embed, "Command", f"!role {removal_role[2]}", True)
 
     await ctx.channel.send(embed=embed, hidden=True)

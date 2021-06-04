@@ -1,10 +1,10 @@
 import discord
 import os
 import traceback
-from methods.database import check_filesystem, create_filesystem
 from dotenv import load_dotenv
 from discord.ext import commands
 from discord_slash import SlashCommand
+from methods.database import create_database, Guild_Info
 from commands.commands import custom_command_handling
 from commands.programs import programs_reaction_handling
 from commands.welcome import welcome_handling
@@ -32,14 +32,28 @@ bot.remove_command("help")
 
 @bot.event
 async def on_ready():
-    print(f"Logged in as {bot.user}.")
+    port = os.environ.get("database_port")
+    if port:
+        create_database(os.environ.get("database_password"), port=port)
+    else:
+        create_database(os.environ.get("database_password"))
 
-    await check_filesystem(bot)
+    # Default Settings Check
+    guilds_on = [guild.id for guild in bot.guilds]
+    db = Guild_Info(0)
+    db.cursor.execute("SELECT guild_id FROM settings")
+    guilds_db = db.cursor.fetchall()
+    if guilds_db is not None:
+        for guild in guilds_on:
+            if guild not in guilds_db:
+                Guild_Info(guild).create_default_settings()
+
+    print(f"Logged in as {bot.user}.")
 
 
 @bot.listen()
 async def on_message(ctx):
-    if ctx.content != None and ctx.author != None:
+    if ctx.content != None and ctx.author != None and ctx.author.name != None:
         print(f"{ctx.guild.name} - {ctx.author.name}: {ctx.content}")
 
     # Don't do anything with a bot's message
@@ -78,8 +92,8 @@ async def on_member_join(ctx):
 
 
 @bot.event
-async def on_guild_join(guild):
-    await create_filesystem(guild)
+async def on_guild_join(ctx):
+    Guild_Info(ctx.guild.id).create_default_settings()
 
 
 for cog in slash_cogs:
