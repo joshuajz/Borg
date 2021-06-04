@@ -107,15 +107,19 @@ class Guild_Info:
             return None
 
     def grab_welcome(self):
-        grab_info = self.cursor.execute(
+        self.cursor.execute(
             "SELECT * FROM welcome WHERE user_id = %s", (self.guild_id,)
-        ).fetchone()
-        welcome = {
-            "channel": grab_info[1],
-            "message": grab_info[2],
-            "enabled": grab_info[3],
-        }
-        return welcome
+        )
+        try:
+            data_pull = self.cursor.fetchone()
+            welcome = {
+                "channel": data_pull[1],
+                "message": data_pull[2],
+                "enabled": data_pull[3],
+            }
+            return welcome
+        except:
+            return None
 
     def grab_commands(self):
         self.cursor.execute(
@@ -140,11 +144,57 @@ class Guild_Info:
         )
 
     def grab_roles(self):
-        grab_roles = self.cursor.execute(
+        self.cursor.execute(
             "SELECT role_id, command FROM command_roles WHERE guild_id = %s",
             (self.guild_id,),
-        ).fetchall()
-        return grab_roles
+        )
+        try:
+            roles = self.cursor.fetchall()
+            return roles
+        except:
+            return None
+
+    def grab_role(self, command=None, role_id=None):
+        if command:
+            self.cursor.execute(
+                "SELECT * FROM command_roles WHERE guild_id = %s AND command = %s",
+                (self.guild_id, command),
+            )
+            try:
+                return self.cursor.fetchone()
+            except:
+                return None
+        elif role_id:
+            self.cursor.execute(
+                "SELECT * FROM command_roles WHERE guild_id = %s AND role_id = %s",
+                (self.guild_id, role_id),
+            )
+            try:
+                return self.cursor.fetchone()
+            except:
+                return None
+
+    def check_role(self, role_id, command):
+        self.cursor.execute(
+            "SELECT EXISTS(SELECT * FROM command_roles WHERE guild_id = %s AND (role_id = %s OR command = %s))",
+            (self.guild_id, role_id, command),
+        )
+        try:
+            return self.cursor.fetchone()
+        except:
+            return None
+
+    def add_role(self, role_id, command):
+        self.cursor.execute(
+            "INSERT INTO command_roles VALUES (%s, %s, %s)",
+            (self.guild_id, role_id, command),
+        )
+
+    def remove_role(self, role_id):
+        self.cursor.execute(
+            "DELETE FROM command_roles WHERE guild_id = %s AND role_id = %s",
+            (self.guild_id, role_id),
+        )
 
     def grab_programs(self, user_id: int):
         self.cursor.execute(

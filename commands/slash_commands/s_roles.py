@@ -26,7 +26,7 @@ class Slash_Roles(commands.Cog):
         result = await role_toggle(ctx, role.lower())
 
         if result[0] == False:
-            await ctx.send(result[1], hiddne=True)
+            await ctx.send(result[1], hidden=True)
         else:
             await ctx.send(embed=result[1], hidden=True)
 
