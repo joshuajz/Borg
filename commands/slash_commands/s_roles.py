@@ -3,6 +3,8 @@ from discord.ext import commands
 from discord_slash import cog_ext, SlashContext
 from discord_slash.utils.manage_commands import create_option
 from commands.roles import role_toggle, roles, add_role, remove_role
+from methods.embed import create_embed_template
+from methods.database import Guild_Info
 
 
 class Slash_Roles(commands.Cog):
@@ -26,7 +28,7 @@ class Slash_Roles(commands.Cog):
         result = await role_toggle(ctx, role.lower())
 
         if result[0] == False:
-            await ctx.send(result[1], hidden=True)
+            await ctx.send(result[1], hiddne=True)
         else:
             await ctx.send(embed=result[1], hidden=True)
 
@@ -84,15 +86,40 @@ class Slash_Roles(commands.Cog):
         description="Allows a role to be removed from this server's list of roles.",
         options=[
             create_option(
+                name="role_name",
+                description="The name of the role in !roles (ie. !hi)",
+                option_type=3,
+                required=False,
+            ),
+            create_option(
                 name="role",
                 description="The actual role to remove.",
                 option_type=8,
-                required=True,
+                required=False,
             ),
         ],
     )
-    async def _roles_remove(self, ctx, role):
-        await remove_role(ctx, role.id)
+    async def _roles_remove(self, ctx, role_name=None, role=None):
+        if role_name is not None:
+            if role_name[0] == "!":
+                role_name = role[1::]
+                actual_role = Guild_Info(ctx.guild.id).grab_role(command=role_name)
+                if actual_role is None:
+                    embed = create_embed_template(
+                        "You did not provide a proper role command.",
+                        "Check all of the role commands with !roles.",
+                        "error",
+                    )
+                    await ctx.send(embed=embed, hidden=True)
+        elif role is not None:
+            await remove_role(ctx, role.id)
+        else:
+            await ctx.send(
+                embed=create_embed_template(
+                    "You did not provide any values.", "", "error"
+                ),
+                hidden=True,
+            )
 
 
 def setup(bot):
