@@ -1,9 +1,15 @@
-import discord
 from typing import Union
 
 
 def parse_id(data: str) -> int:
-    """Finds a user given some sort of user data -> userid (178543252637483009) user @ (<@178543252637483009> OR <@!178543252637483009>)"""
+    """Finds a user given some sort of user data -> userid (178543252637483009) user @ (<@178543252637483009>) or (<@!178543252637483009>)
+
+    Args:
+        data (str): User data
+
+    Returns:
+        int: User ID
+    """
 
     if type(data) == int:
         return data
@@ -27,7 +33,14 @@ def parse_id(data: str) -> int:
 
 
 def parse_channel(data: str) -> int:
-    """Finds a channel given some sort of data.  ie. <#839744778517872650> -> 839744778517872650"""
+    """Finds a channel given some sort of data ie. <#839744778517872650> -> 839744778517872650
+
+    Args:
+        data (str): The channel data
+
+    Returns:
+        int: The channel ID
+    """
 
     if type(data) == int:
         return data
@@ -48,7 +61,15 @@ def parse_channel(data: str) -> int:
 
 
 def find_channel(ctx, channel: str) -> Union[int, list]:
-    """Finds a channel given it's name."""
+    """Finds a channel given it's name
+
+    Args:
+        ctx (discord.Context): Discord.py's Context
+        channel (str): The name of the channel
+
+    Returns:
+        Union[int, list]: Either an int with the channel ID or an error message
+    """
 
     channel_id = [i.id for i in ctx.guild.channels if i.name == channel]
 

@@ -71,7 +71,7 @@ def create_database(password: str, port="5432"):
     return con, cursor
 
 
-def database_connection(password: str, port="5432"):
+def database_connection(password: str, port="5432") -> tuple:
     """Creates a connection to the Borg database."""
 
     # Connect
@@ -105,7 +105,7 @@ class Guild_Info:
             result = database_connection(os.environ.get("database_password"))
         self.db, self.cursor = result
 
-    def grab_settings(self):
+    def grab_settings(self) -> dict:
         """Fetches the server's settings.
 
         Returns:
@@ -129,7 +129,7 @@ class Guild_Info:
         except:
             return None
 
-    def grab_welcome(self):
+    def grab_welcome(self) -> dict:
         """Fetches a server's welcome settings.
 
         Returns:
@@ -155,7 +155,7 @@ class Guild_Info:
         except:
             return None
 
-    def grab_commands(self):
+    def grab_commands(self) -> list:
         """Fetches all of the commands for the server.
 
         Returns:
@@ -202,7 +202,7 @@ class Guild_Info:
             (self.guild.id, command),
         )
 
-    def grab_roles(self):
+    def grab_roles(self) -> list:
         """Provides all of the roles on a server.
 
         Returns:
@@ -223,7 +223,7 @@ class Guild_Info:
         except:
             return None
 
-    def grab_role(self, command=None, role_id=None):
+    def grab_role(self, command=None, role_id=None) -> tuple:
         """Fetches a specific role.
 
         Args:
@@ -257,7 +257,7 @@ class Guild_Info:
             except:
                 return None
 
-    def check_role(self, role_id, command):
+    def check_role(self, role_id, command) -> bool:
         """Checks to see if a role exists when adding a new role to the database.
 
         Args:
@@ -302,7 +302,7 @@ class Guild_Info:
             (self.guild_id, role_id),
         )
 
-    def grab_programs(self, user_id: int):
+    def grab_programs(self, user_id: int) -> str:
         """Grabs all of a user's programs
 
         Args:

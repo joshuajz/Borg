@@ -4,9 +4,26 @@ from methods.embed import create_embed, add_field
 
 
 async def page_command(ctx, bot, items: list, title: str):
-    """Creates a paged dialog for printing out large quantities of items."""
+    """Creates a paged dialog for printing out large quantities of items
 
-    def check(reaction, user):
+    Args:
+        ctx (discord.Context): Context for the command call
+        bot (discord.Bot): The actual bot instance
+        items (list): A list of items to display
+        title (str): Title of the page list
+    """
+
+    def check(reaction: discord.Reaction, user: discord.User) -> bool:
+        """Checks to see if the user who added the reaction is the same as the person who callled the command
+
+        Args:
+            reaction (discord.Reaction): The actual added reaction
+            user (discord.User): The user instance
+
+        Returns:
+            bool: If the user who ran the command added the reaction
+        """
+
         return user == ctx.author and str(reaction) in ["◀️", "▶️"]
 
     # Sort the items list

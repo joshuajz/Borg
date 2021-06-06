@@ -1,6 +1,5 @@
 import discord
 import os
-import traceback
 from dotenv import load_dotenv
 from discord.ext import commands
 from discord_slash import SlashCommand
@@ -19,6 +18,7 @@ intents.reactions = True
 # Root directory
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# List of slash commands and classic commands
 slash_cogs = ("s_commands", "s_programs", "s_roles", "s_help", "s_course")
 classic_cogs = ("c_commands", "c_programs", "c_roles", "c_help")
 
@@ -32,6 +32,8 @@ bot.remove_command("help")
 
 @bot.event
 async def on_ready():
+    """When the bot starts up."""
+
     port = os.environ.get("database_port")
     if port:
         create_database(os.environ.get("database_password"), port=port)
@@ -52,50 +54,63 @@ async def on_ready():
 
 
 @bot.listen()
-async def on_message(ctx):
-    if ctx.content != None and ctx.author != None and ctx.author.name != None:
-        print(f"{ctx.guild.name} - {ctx.author.name}: {ctx.content}")
+async def on_message(message: discord.Message):
+    """When a message is sent."""
+
+    if (
+        message.content != None
+        and message.author != None
+        and message.author.name != None
+    ):
+        print(f"{message.guild.name} - {message.author.name}: {message.content}")
 
     # Don't do anything with a bot's message
-    if ctx.author == bot.user:
+    if message.author == bot.user:
         return
 
     # Potential regex: (?<=^!)(\w*)
 
-    if ctx.content.startswith("!"):
-        if "\n" in ctx.content:
+    if message.content.startswith("!"):
+        if "\n" in message.content:
             command = (
-                ctx.content.split("\n")[0]
+                message.content.split("\n")[0]
                 .split(" ")[0]
                 .strip()
                 .replace("!", "")
                 .lower()
             )
         else:
-            command = ctx.content[1::].split(" ")[0].lower().strip().lower()
+            command = message.content[1::].split(" ")[0].lower().strip().lower()
 
-        await custom_command_handling(ctx, command)
+        await custom_command_handling(message, command)
 
 
 @bot.event
-async def on_raw_reaction_add(ctx):
-    if ctx.member.bot:
+async def on_raw_reaction_add(reaction: discord.RawReactionActionEvent):
+    """When a reaction is added."""
+
+    if reaction.member.bot:
         return
 
-    if await programs_reaction_handling(ctx, bot) == True:
+    if await programs_reaction_handling(reaction, bot) == True:
         return
 
 
 @bot.event
-async def on_member_join(ctx):
-    await welcome_handling(ctx, bot)
+async def on_member_join(member: discord.Member):
+    """When a member joins the server."""
+
+    await welcome_handling(member, bot)
 
 
 @bot.event
-async def on_guild_join(ctx):
-    Guild_Info(ctx.guild.id).create_default_settings()
+async def on_guild_join(guild: discord.Guild):
+    """When the bot joins a guild."""
+
+    Guild_Info(guild.guild.id).create_default_settings()
 
 
+# Load the various commands
 for cog in slash_cogs:
     bot.load_extension(f"commands.slash_commands.{cog}")
 

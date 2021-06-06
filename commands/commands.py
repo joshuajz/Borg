@@ -1,14 +1,21 @@
 import discord
-import asyncio
 from urlextract import URLExtract
 from methods.database import Guild_Info
-from typing import List
+from typing import Union
 from methods.embed import create_embed, create_embed_template
 from methods.paged_command import page_command
 
 
-async def custom_command_list(bot, ctx) -> list:
-    """Returns the list of custom commands."""
+async def custom_command_list(bot: discord.Bot, ctx: discord.Context) -> bool:
+    """Displays the custom commands.
+
+    Args:
+        bot (discord.Bot): Bot instance
+        ctx (discord.Context): Context for the call
+
+    Returns:
+        bool: Whether the command list was displayed
+    """
 
     # Database
     db = Guild_Info(ctx.guild.id)
@@ -33,6 +40,7 @@ async def custom_command_list(bot, ctx) -> list:
 
     message = ""
 
+    # Display the commands with the denominator
     for i in range(command_list_length):
         message += (
             "!" + command_list[i] + ("\n" if i + 1 != command_list_length else "")
@@ -43,8 +51,20 @@ async def custom_command_list(bot, ctx) -> list:
     return True
 
 
-async def custom_command_add(ctx, name: str, description: str, image: str or None):
-    """Adds a command to the database."""
+async def custom_command_add(
+    ctx: discord.Context, name: str, description: str, image: str or None
+) -> Union(bool, discord.Embed):
+    """Adds a command to the database
+
+    Args:
+        ctx (discord.Context): Context
+        name (str): Name of the command to add
+        description (str): Description of the command
+        image (strorNone): Image link for the command
+
+    Returns:
+        Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
+    """
     name = name.lower()
     name = name[1::] if name[0] == "!" else name
 
@@ -128,8 +148,16 @@ async def custom_command_add(ctx, name: str, description: str, image: str or Non
     ]
 
 
-async def custom_command_remove(ctx, command: str) -> list:
-    """Removes a custom command from that server's database"""
+async def custom_command_remove(ctx, command: str) -> Union(bool, discord.Embed):
+    """Removes a custom command from the server's database
+
+    Args:
+        ctx (discord.Context): Context
+        command (str): The name of the command to remove
+
+    Returns:
+        Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
+    """
 
     # Permissions check
     if ctx.author.guild_permissions.administrator != True:
@@ -191,8 +219,13 @@ async def custom_command_remove(ctx, command: str) -> list:
         ]
 
 
-async def custom_command_handling(ctx, command: str):
-    """Handling for custom commands -> Calls the commands"""
+async def custom_command_handling(ctx: discord.Context, command: str):
+    """Handling for custom commands
+
+    Args:
+        ctx (discord.Context): Context
+        command (str): The command that was called
+    """
 
     db = Guild_Info(ctx.guild.id)
 
