@@ -1,10 +1,12 @@
 import json
 import requests
 import sqlite3
+from db_connection import course_database_connection
+
+# from courses.database.db_connection import course_database_connection
 
 base = "https://api.qmulus.io/v1/courses/"
-db = sqlite3.connect("database.db")
-cursor = db.cursor()
+db, cursor = course_database_connection()
 
 
 def get_info(offset=0):
@@ -19,22 +21,6 @@ def get_info(offset=0):
         return json.loads(response.content.decode("utf-8"))
     else:
         return False
-
-
-def create_database():
-    cursor.execute(
-        """CREATE TABLE "queens" (
-	"id"	TEXT NOT NULL,
-    "course_code"	INTEGER NOT NULL,
-	"department"	TEXT NOT NULL,
-	"name"	TEXT NOT NULL,
-	"description"	TEXT NOT NULL,
-	"requirements"	TEXT,
-	"academic_level"	TEXT NOT NULL,
-	"units"	INTEGER NOT NULL
-);"""
-    )
-    db.commit()
 
 
 def pull_values():
@@ -66,11 +52,17 @@ def place_info(items: list):
         if requirements == "":
             requirements = None
 
+        try:
+            course_code = int(course_code)
+        except:
+            continue
+
         cursor.execute(
-            "INSERT INTO queens VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO courses(school, code, number, department, name, description, requirements, academic_level, units) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (
+                "queens",
                 course_id,
-                course_code,
+                int(course_code),
                 item["department"],
                 item["course_name"],
                 item["description"],
@@ -79,12 +71,6 @@ def place_info(items: list):
                 item["units"],
             ),
         )
-    db.commit()
 
-
-try:
-    create_database()
-except:
-    print("Database already created.")
 
 pull_values()

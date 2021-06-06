@@ -1,11 +1,11 @@
 import json
 import requests
-import sqlite3
+
 import re
+from db_connection import course_database_connection
 
 base = "https://nikel.ml/api/courses"
-db = sqlite3.connect("database.db")
-cursor = db.cursor()
+db, cursor = course_database_connection()
 
 
 def get_info(offset=0):
@@ -17,20 +17,6 @@ def get_info(offset=0):
         return json.loads(response.content.decode("utf-8"))["response"]
     else:
         return False
-
-
-def create_database():
-    cursor.execute(
-        """CREATE TABLE "uoft" (
-        "id" TEXT NOT NULL,
-        "course_code" INTEGER NOT NULL,
-        "department" TEXT NOT NULL,
-        "name" TEXT NOT NULL,
-        "description" TEXT,
-        "requirements" TEXT 
-    );"""
-    )
-    db.commit()
 
 
 def pull_values():
@@ -50,6 +36,21 @@ def place_info(courses: list):
         m = r.match(code)
         return (code, m.group(2), m.group(1))
 
+    def get_campus(code):
+        end = code[-2::]
+        if end[0] == "H":
+            academic_units = 3
+        else:
+            academic_units = 3
+
+        if end[1] == "1":
+            campus = "UTSG"
+        elif end[1] == "3":
+            campus = "UTSC"
+        elif end[1] == "5":
+            campus = "UTM"
+        return academic_units, campus
+
     """
     H1 - UTSG half year
     Y1 - UTSG full year
@@ -61,19 +62,18 @@ def place_info(courses: list):
     Y5 - UTM full year
     """
 
-    current_courses = [
-        i[0] for i in cursor.execute("SELECT course_code FROM waterloo").fetchall()
-    ]
-
     for course in courses:
-        print(course)
-        break
+        code = course["code"]
+        if code is None:
+            break
+        try:
+            academic_units, campus = get_campus(code)
+        except:
+            break
+
         code = course["code"]
 
         course_info = split_code(code)
-
-        if course_info[0] in current_courses:
-            continue
 
         requirements = ""
         if course["prerequisites"] == None:
@@ -95,22 +95,19 @@ def place_info(courses: list):
             )
 
         cursor.execute(
-            "INSERT INTO uoft VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO courses(school, code, number, department, name, description, requirements, units, campus) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (
+                "uoft",
                 course_info[0],
                 int(course_info[1]),
                 course_info[2],
                 course["name"],
                 course["description"],
                 requirements,
+                academic_units,
+                campus,
             ),
         )
-        db.commit()
 
-
-try:
-    create_database()
-except:
-    print("Database already created.")
 
 pull_values()

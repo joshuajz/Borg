@@ -63,6 +63,18 @@ def create_database(password: str, port="5432"):
         message text,
         enabled boolean
     )""",
+        """CREATE TABLE courses (
+            school text,
+            code varchar(25),
+            number smallint,
+            department varchar(200),
+            name text,
+            description text,
+            requirements text,
+            academic_level text,
+            units smallint,
+            campus text
+    )""",
     ]
 
     for command in commands:
