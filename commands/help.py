@@ -3,8 +3,13 @@ from methods.embed import create_embed, add_field
 import asyncio
 
 
-async def help_command(ctx, bot):
-    """Help command"""
+async def help_command(ctx: discord.Context, bot: discord.Bot):
+    """Help Command
+
+    Args:
+        ctx (discord.Context): Context
+        bot (discord.Bot): Bot instance
+    """
 
     def check(reaction, user):
         return user == ctx.author and str(reaction) in ["◀️", "▶️"]

@@ -4,8 +4,16 @@ from methods.embed import create_embed, add_field
 from methods.paged_command import page_command
 
 
-async def role_toggle(ctx, role):
-    """The !role {} command."""
+async def role_toggle(ctx: discord.Context, role: str) -> Union(bool, discord.Embed):
+    """Handling for the !role command
+
+    Args:
+        ctx (discord.Context): Context
+        role (str): The role's denominator
+
+    Returns:
+        Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
+    """
 
     # Grab the user's roles
     user_roles = [i.id for i in ctx.author.roles]
@@ -53,8 +61,16 @@ async def role_toggle(ctx, role):
         return [True, embed]
 
 
-async def roles(ctx, bot):
-    """Lists out this server's roles."""
+async def roles(ctx: discord.Context, bot: discord.Bot) -> Union(bool, discord.Embed):
+    """Lists out this server's roles
+
+    Args:
+        ctx (discord.Context): Context
+        bot (discord.Bot): Bot
+
+    Returns:
+        Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
+    """
 
     db = Guild_Info(ctx.guild.id)
 
@@ -79,8 +95,14 @@ async def roles(ctx, bot):
     return True
 
 
-async def add_role(ctx, name: str, role_id: int):
-    """Adds a role to the database."""
+async def add_role(ctx: discord.Context, name: str, role_id: int):
+    """Adds a role to the dataabase
+
+    Args:
+        ctx (discord.Context): Context
+        name (str): Name of the role (denominator)
+        role_id (int): The role's ID
+    """
 
     if ctx.author.guild_permissions.administrator != True:
         await ctx.send(
@@ -117,7 +139,12 @@ async def add_role(ctx, name: str, role_id: int):
 
 
 async def remove_role(ctx, role_id: int):
-    """Removes a role from the database."""
+    """Removes a role from the database
+
+    Args:
+        ctx (discord.Context): Context
+        role_id (int): The ID of the role
+    """
 
     if ctx.author.guild_permissions.administrator != True:
         await ctx.send(

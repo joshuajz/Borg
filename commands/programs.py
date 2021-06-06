@@ -2,10 +2,23 @@ import discord
 from methods.database import Guild_Info
 from methods.embed import create_embed, add_field, create_embed_template
 from methods.data import parse_id
+from typing import Union
 
 
-async def programs_add(ctx, client, programs: list, user: int) -> list:
-    """Creates a request to add programs for a user"""
+async def programs_add(
+    ctx: discord.Context, client: discord.Bot, programs: list, user: int
+) -> Union(bool, discord.Embed):
+    """Creates a request to add programs for a user
+
+    Args:
+        ctx (discord.Context): Context
+        client (discord.Bot): Discord Bot
+        programs (list): List of programs to add
+        user (int): User's ID to add
+
+    Returns:
+        Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
+    """
 
     db = Guild_Info(ctx.guild.id)
 
@@ -20,6 +33,7 @@ async def programs_add(ctx, client, programs: list, user: int) -> list:
                 "error",
             ),
         ]
+
     programs_channel = settings["programs_channel"]
 
     # Creates an embed
@@ -42,6 +56,7 @@ async def programs_add(ctx, client, programs: list, user: int) -> list:
     verify_channel = client.get_channel(programs_channel)
     verification_msg = await verify_channel.send(embed=embed)
 
+    # Adds the verification emoji
     for emoji in ["✅", "❌"]:
         await verification_msg.add_reaction(emoji)
 
@@ -53,8 +68,19 @@ async def programs_add(ctx, client, programs: list, user: int) -> list:
     ]
 
 
-async def programs_remove(ctx, programs: str, user=None) -> list:
-    """Allows a user to remove programs"""
+async def programs_remove(
+    ctx: discord.Context, programs: str, user=None
+) -> Union(bool, discord.Embed):
+    """Allows a user to remove programs
+
+    Args:
+        ctx (discord.Context): Context
+        programs (str): The programs to remove
+        user (int, optional): The user ID to remove programs from. Defaults to None.
+
+    Returns:
+        Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
+    """
 
     # Determines the user id
     if user == ctx.author.id:
@@ -158,8 +184,21 @@ async def programs_remove(ctx, programs: str, user=None) -> list:
     ]
 
 
-async def programs_edit(ctx, client, user, before, after):
-    """Edits a user's specific program"""
+async def programs_edit(
+    ctx: discord.Context, client: discord.Bot, user: int, before: str, after: str
+) -> Union(bool, discord.Embed):
+    """Edits one of a user's programs
+
+    Args:
+        ctx (discord.Context): Context
+        client (discord.Bot): Bot instance
+        user (int): User's ID
+        before (str): The program to edit
+        after (str): The new text to replace the program
+
+    Returns:
+        Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
+    """
 
     # Check user
     if user is None:
@@ -247,8 +286,17 @@ async def programs_edit(ctx, client, user, before, after):
     return [True, embed]
 
 
-async def programs(ctx, bot, user: str) -> list:
-    """Display's a user's programs"""
+async def programs(ctx, bot, user: str) -> Union(bool, discord.Embed):
+    """Display's a user's programs
+
+    Args:
+        ctx (discord.Context): Context
+        bot (discord.Bot): Bot
+        user (str): User's programs to display
+
+    Returns:
+        Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
+    """
 
     # Check
     if user is None:
@@ -298,8 +346,18 @@ async def programs(ctx, bot, user: str) -> list:
     ]
 
 
-async def programs_setup(ctx, channel: int):
-    """Allows an administrator to setup the moderations channel."""
+async def programs_setup(
+    ctx: discord.Context, channel: int
+) -> Union(bool, discord.Embed):
+    """Allows an administrator to setup a programs channel
+
+    Args:
+        ctx (discord.Context): Context
+        channel (int): The channel for programs verification commands
+
+    Returns:
+        Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
+    """
 
     if ctx.author.guild_permissions.administrator != True:
         return
@@ -321,8 +379,16 @@ async def programs_setup(ctx, channel: int):
     ]
 
 
-async def programs_reaction_handling(ctx, client):
-    """Handles reaction adding for programs commands."""
+async def programs_reaction_handling(ctx: discord.Context, client: discord.Bot) -> bool:
+    """Handles Reactions for programs verification
+
+    Args:
+        ctx (discord.Context): Context
+        client (discord.Bot): Bot
+
+    Returns:
+        bool: If it was a programs related reaction
+    """
 
     db = Guild_Info(ctx.guild_id)
 
