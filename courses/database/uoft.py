@@ -1,6 +1,5 @@
 import json
 import requests
-
 import re
 from db_connection import course_database_connection
 

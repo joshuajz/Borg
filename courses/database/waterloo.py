@@ -1,13 +1,12 @@
 import json
 import requests
-import sqlite3
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
+from db_connection import course_database_connection
 
 load_dotenv()
 api_key = os.environ.get("WATERLOO")
-db = sqlite3.connect("database.db")
-cursor = db.cursor()
+db, cursor = course_database_connection()
 
 
 def get_term():
@@ -47,52 +46,50 @@ def get_course(course, term=get_term()):
         return False
 
 
-def create_database():
-    cursor.execute(
-        """CREATE TABLE "waterloo" (
-        "id" TEXT NOT NULL,
-        "course_code" TEXT NOT NULL,
-        "department" TEXT NOT NULL,
-        "name" TEXT NOT NULL,
-        "description" TEXT NOT NULL,
-        "requirements" TEXT
-    );"""
-    )
-    db.commit()
-
-
 def pull_values(courses=get_courses()):
-
-    current_courses = [
-        i[0] for i in cursor.execute("SELECT id FROM waterloo").fetchall()
-    ]
+    def pull_numbers(string):
+        final = ""
+        for s in string:
+            if s.isnumeric():
+                final += s
+        return final
 
     for course in courses:
-        course_id = course["catalogNumber"]
-        if course_id is None:
-            continue
-        course_code = course["subjectCode"] + "-" + course_id
+        campus = None
+        course_number = course["catalogNumber"]
 
-        if course_code in current_courses:
+        if course_number is None:
             continue
+
+        if course_number[-1].upper() == "B":
+            continue
+        elif course_number[-1].upper() == "A":
+            course_number = course_number[0:-1]
+        elif course_number[-1].upper() == "R":
+            campus = "Renison"
+            course_number = course_number[0:-1]
+        elif course_number[-1].upper() == "*":
+            course_number = None
+        else:
+            course_number = pull_numbers(course_number)
+            if len(str(course_number)) == 0:
+                course_number = None
+
+        course_code = course["subjectCode"] + "-" + course["catalogNumber"]
 
         cursor.execute(
-            "INSERT INTO waterloo VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO courses(school, code, number, department, name, description, requirements, campus) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
             (
+                "waterloo",
                 course_code,
-                course["catalogNumber"],
+                course_number,
                 course["subjectCode"],
                 course["title"],
                 course["description"],
                 course["requirementsDescription"],
+                campus,
             ),
         )
-        db.commit()
 
-
-try:
-    create_database()
-except:
-    print("Database already created.")
 
 pull_values()
