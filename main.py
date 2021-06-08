@@ -34,11 +34,7 @@ bot.remove_command("help")
 async def on_ready():
     """When the bot starts up."""
 
-    port = os.environ.get("database_port")
-    if port:
-        create_database(os.environ.get("database_password"), port=port)
-    else:
-        create_database(os.environ.get("database_password"))
+    create_database()
 
     # Default Settings Check
     guilds_on = [guild.id for guild in bot.guilds]

@@ -3,6 +3,7 @@ import sqlite3
 from methods.embed import create_embed, add_field
 import json
 import os
+from methods.database import database_connection
 
 # Options:
 # User provides course and school -> return the course if it exists, otherwise return a list of courses in that faculty
@@ -61,21 +62,16 @@ async def waterloo_embed(course):
 SCHOOL_EMBEDS = {"queens": queens_embed, "waterloo": waterloo_embed, "uoft": uoft_embed}
 
 
-async def course(ctx, course, school):
-    db = course_database()
+async def course(ctx, course, school=None):
+    db, cursor = database_connection()
 
     if school:
-        course_fetched = (
-            db["db"]
-            .execute(f"SELECT * FROM {school} WHERE id = (?)", (course,))
-            .fetchall()
+        cursor.execute(
+            "SELECT * FROM courses WHERE school = %s AND course = %s", (school, course)
         )
+        course_fetched = cursor.fetchall()
 
-        # Found the course
-        if len(course_fetched) == 1:
-            embed = await SCHOOL_EMBEDS[school](course_fetched[0])
-            await ctx.send(embed=embed)
-        elif len(course_fetched) == 0:
+        if course_fetched is None:
             faculty = grab_faculty(course)
 
             # Check to see if a proper faculty was provided
@@ -107,6 +103,10 @@ async def course(ctx, course, school):
                     "cyan",
                 )
                 await ctx.send(embed=embed, hidden=True)
+        elif len(course_fetched) == 1:
+            embed = await SCHOOL_EMBEDS[school](course_fetched[0])
+            await ctx.send(embed=embed)
+
     else:
         # We don't have a school so we're going to need to query every school that we have for that course code
         results = grab_courses(course)
@@ -129,7 +129,7 @@ async def course(ctx, course, school):
 
 
 def grab_courses(course):
-    db = course_database()
+    db, cursor = course_database_connection()
 
     results = {}
 
@@ -152,8 +152,3 @@ def grab_faculty(course):
         if l.isalpha():
             final += l
     return final
-
-
-def course_database():
-    con = sqlite3.connect(f"{ROOT_DIR}/courses/database/database.db")
-    return {"db": con.cursor(), "con": con}
