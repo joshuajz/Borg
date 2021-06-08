@@ -1,20 +1,23 @@
 import discord
 from urlextract import URLExtract
 from methods.database import Guild_Info
-from typing import Union
+from typing import Tuple
 from methods.embed import create_embed, create_embed_template
 from methods.paged_command import page_command
 
 
-async def custom_command_list(bot: discord.Bot, ctx: discord.Context) -> bool:
+async def custom_command_list(
+    bot: discord.ClientUser.bot, ctx: discord.ext.commands.Context
+):
     """Displays the custom commands.
 
     Args:
-        bot (discord.Bot): Bot instance
-        ctx (discord.Context): Context for the call
+        bot (discord.ClientUser.bot): Bot instance
+        ctx (discord.ext.commands.Context): Context for the call
 
     Returns:
-        bool: Whether the command list was displayed
+        - bool: Whether the command list was displayed
+        - Tuple[bool, discord.Embed]: bool is the status code, embed is the response message
     """
 
     # Database
@@ -24,14 +27,14 @@ async def custom_command_list(bot: discord.Bot, ctx: discord.Context) -> bool:
     grab_commands = db.grab_commands()
 
     if grab_commands is None:
-        return [
+        return (
             False,
             create_embed_template(
                 "No Commands",
                 "There are currently no commands, ask an admin to use /command create or !command add.",
                 "error",
             ),
-        ]
+        )
 
     command_list = [i[0] for i in grab_commands]
 
@@ -52,32 +55,32 @@ async def custom_command_list(bot: discord.Bot, ctx: discord.Context) -> bool:
 
 
 async def custom_command_add(
-    ctx: discord.Context, name: str, description: str, image: str or None
-) -> Union(bool, discord.Embed):
+    ctx: discord.ext.commands.Context, name: str, description: str, image: str or None
+) -> Tuple[bool, discord.Embed]:
     """Adds a command to the database
 
     Args:
-        ctx (discord.Context): Context
+        ctx (discord.ext.commands.Context): Context
         name (str): Name of the command to add
         description (str): Description of the command
         image (strorNone): Image link for the command
 
     Returns:
-        Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
+        Tuple[bool, discord.Embed]: [Status: bool, Embed: discord.Embed]
     """
     name = name.lower()
     name = name[1::] if name[0] == "!" else name
 
     # Permissions check
     if ctx.author.guild_permissions.administrator != True:
-        return [
+        return (
             False,
             create_embed_template(
                 "No Permission",
                 "You do not have permission to create a command.",
                 "error",
             ),
-        ]
+        )
 
     urls = []
     if image:
@@ -106,20 +109,20 @@ async def custom_command_add(
             image.startswith("http")
             and set(image.split(".")).intersection(set(photo_indicators))
         ):
-            return [
+            return (
                 False,
                 create_embed_template(
                     "Invalid Image", "Make sure your link is to an image.", "error"
                 ),
-            ]
+            )
     elif len(urls) == 2:
         # Too many URLs
-        return [
+        return (
             False,
             create_embed_template(
                 "Too many Links", "Borg can only support 1 image per command.", "error"
             ),
-        ]
+        )
     else:
         urls = None
 
@@ -133,42 +136,44 @@ async def custom_command_add(
 
         # Ensure the current command is unique
         if name in command_list:
-            return [False, "There is already a command with that denominator."]
+            return (False, "There is already a command with that denominator.")
 
     # Add it to the database
     db.add_command(name, description, image)
 
-    return [
+    return (
         True,
         create_embed(
             "Success",
             f"Command successfully created, run it with !{name}",
             "light_green",
         ),
-    ]
+    )
 
 
-async def custom_command_remove(ctx, command: str) -> Union(bool, discord.Embed):
+async def custom_command_remove(
+    ctx: discord.ext.commands.Context, command: str
+) -> Tuple[bool, discord.Embed]:
     """Removes a custom command from the server's database
 
     Args:
-        ctx (discord.Context): Context
+        ctx (discord.ext.commands.Context): Context
         command (str): The name of the command to remove
 
     Returns:
-        Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
+        Tuple[bool, discord.Embed]: [Status: bool, Embed: discord.Embed]
     """
 
     # Permissions check
     if ctx.author.guild_permissions.administrator != True:
-        return [
+        return (
             False,
             create_embed_template(
                 "No Permission",
                 "You do not have permission to create commands.",
                 "error",
             ),
-        ]
+        )
 
     db = Guild_Info(ctx.guild.id)
 
@@ -179,14 +184,14 @@ async def custom_command_remove(ctx, command: str) -> Union(bool, discord.Embed)
     # Grabs all of the commands
     grab_commands = db.grab_commands()
     if grab_commands is None:
-        return [
+        return (
             False,
             create_embed_template(
                 "Invalid Command",
                 "This server has no commands therefore you cannot remove one.",
                 "error",
             ),
-        ]
+        )
 
     command_list = [i[0] for i in grab_commands]
 
@@ -202,28 +207,28 @@ async def custom_command_remove(ctx, command: str) -> Union(bool, discord.Embed)
         # Deletes
         db.remove_command(command)
 
-        return [
+        return (
             True,
             create_embed(
                 "Command Successfully Deleted",
                 f"Command Deleted: !{command_delete[0]}",
                 "light_green",
             ),
-        ]
+        )
     else:
-        return [
+        return (
             False,
             create_embed_template(
                 "Invalid Command", "Check the commands with !commands.", "error"
             ),
-        ]
+        )
 
 
-async def custom_command_handling(ctx: discord.Context, command: str):
+async def custom_command_handling(ctx: discord.ext.commands.Context, command: str):
     """Handling for custom commands
 
     Args:
-        ctx (discord.Context): Context
+        ctx (discord.ext.commands.Context): Context
         command (str): The command that was called
     """
 

@@ -6,6 +6,8 @@ import os
 def create_database(password: str, port="5432"):
     """Create the default postgresql database."""
 
+    print(os.getcwd())
+
     print("Creating Database.")
 
     # Connect to the default database
@@ -72,7 +74,7 @@ def create_database(password: str, port="5432"):
             description text,
             requirements text,
             academic_level text,
-            units smallint,
+            units decimal,
             campus text
     )""",
     ]
