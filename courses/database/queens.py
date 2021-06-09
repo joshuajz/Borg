@@ -1,12 +1,11 @@
 import json
 import requests
 import sqlite3
-from db_connection import course_database_connection
+from methods.database import database_connection
 
-# from courses.database.db_connection import course_database_connection
 
 base = "https://api.qmulus.io/v1/courses/"
-db, cursor = course_database_connection()
+db, cursor = database_connection()
 
 
 def get_info(offset=0):
@@ -24,17 +23,20 @@ def get_info(offset=0):
 
 
 def pull_values():
+    cursor.execute("SELECT code FROM courses WHERE school = 'queens'")
+    courses = [i[0] for i in cursor.fetchall()]
+
     offset = 0
     while True:
         info = get_info(offset)
         if info != False and len(info) != 0:
-            place_info(info)
+            place_info(info, courses)
             offset += 100
         else:
             break
 
 
-def place_info(items: list):
+def place_info(items: list, in_database):
     for item in items:
         course_id = item["id"]
         course_code = item["course_code"]
@@ -57,6 +59,9 @@ def place_info(items: list):
         except:
             continue
 
+        if course_id in in_database:
+            continue
+
         cursor.execute(
             "INSERT INTO courses(school, code, number, department, name, description, requirements, academic_level, units) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (
@@ -71,6 +76,3 @@ def place_info(items: list):
                 item["units"],
             ),
         )
-
-
-pull_values()

@@ -2,11 +2,20 @@ import json
 import requests
 import os
 from dotenv import load_dotenv
-from db_connection import course_database_connection
+from methods.database import database_connection
+
+cwd = os.getcwd().split("/")
+while cwd[-1] != "Borg":
+    try:
+        os.chdir("..")
+    except:
+        print(
+            "Error moving directories.  Make sure you haven't renamed the folder that Borg resides in."
+        )
 
 load_dotenv()
-api_key = os.environ.get("WATERLOO")
-db, cursor = course_database_connection()
+api_key = os.environ.get("waterloo_api")
+db, cursor = database_connection()
 
 
 def get_term():
@@ -54,6 +63,9 @@ def pull_values(courses=get_courses()):
                 final += s
         return final
 
+    cursor.execute("SELECT code FROM courses WHERE school = 'waterloo'")
+    in_database = [i[0] for i in cursor.fetchall()]
+
     for course in courses:
         campus = None
         course_number = course["catalogNumber"]
@@ -77,6 +89,9 @@ def pull_values(courses=get_courses()):
 
         course_code = course["subjectCode"] + "-" + course["catalogNumber"]
 
+        if course_code in in_database:
+            continue
+
         cursor.execute(
             "INSERT INTO courses(school, code, number, department, name, description, requirements, campus) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
             (
@@ -90,6 +105,3 @@ def pull_values(courses=get_courses()):
                 campus,
             ),
         )
-
-
-pull_values()

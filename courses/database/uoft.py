@@ -1,10 +1,10 @@
 import json
 import requests
 import re
-from db_connection import course_database_connection
+from methods.database import database_connection
 
 base = "https://nikel.ml/api/courses"
-db, cursor = course_database_connection()
+db, cursor = database_connection()
 
 
 def get_info(offset=0):
@@ -61,6 +61,9 @@ def place_info(courses: list):
     Y5 - UTM full year
     """
 
+    cursor.execute("SELECT code FROM courses WHERE school = 'uoft'")
+    in_database = [i[0] for i in cursor.fetchall()]
+
     for course in courses:
         code = course["code"]
         if code is None:
@@ -73,6 +76,9 @@ def place_info(courses: list):
         code = course["code"]
 
         course_info = split_code(code)
+
+        if course["code"] in in_database:
+            continue
 
         requirements = ""
         if course["prerequisites"] == None:
@@ -107,6 +113,3 @@ def place_info(courses: list):
                 campus,
             ),
         )
-
-
-pull_values()
