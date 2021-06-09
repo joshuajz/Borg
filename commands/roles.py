@@ -2,17 +2,20 @@ import discord
 from methods.database import Guild_Info
 from methods.embed import create_embed, add_field
 from methods.paged_command import page_command
+from typing import Tuple
 
 
-async def role_toggle(ctx: discord.Context, role: str) -> Union(bool, discord.Embed):
+async def role_toggle(
+    ctx: discord.ext.commands.Context, role: str
+) -> Tuple[bool, discord.Embed]:
     """Handling for the !role command
 
     Args:
-        ctx (discord.Context): Context
+        ctx (discord.ext.commands.Context): Context
         role (str): The role's denominator
 
     Returns:
-        Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
+        Tuple[bool, discord.Embed]: [Status: bool, Embed: discord.Embed]
     """
 
     # Grab the user's roles
@@ -24,7 +27,7 @@ async def role_toggle(ctx: discord.Context, role: str) -> Union(bool, discord.Em
     role_id = db.grab_role(command=role)
 
     if role_id is None:
-        return [False, "Invalid Roles.  Use !roles to see all of the roles."]
+        return (False, "Invalid Roles.  Use !roles to see all of the roles.")
 
     role_id = role_id[1]
 
@@ -35,38 +38,40 @@ async def role_toggle(ctx: discord.Context, role: str) -> Union(bool, discord.Em
         try:
             await ctx.author.remove_roles(actual_role)
         except:
-            return [
+            return (
                 False,
                 "Borg doesn't have permission to add/remove that role.  Ensure Borg's role is **above** the role you're trying to toggle in the server settings (Contact an administrator).",
-            ]
+            )
 
         embed = create_embed(
             "Removed Role", f"You removed the {actual_role.mention} role.", "dark_blue"
         )
-        return [True, embed]
+        return (True, embed)
 
     else:
         # Remove the role
         try:
             await ctx.author.add_roles(actual_role)
         except:
-            return [
+            return (
                 False,
                 "Borg doesn't have permission to add/remove that role.  Ensure Borg's role is **above** the role you're trying to toggle in the server settings (Contact an administrator).",
-            ]
+            )
 
         embed = create_embed(
             "Added Role", f"You added the {actual_role.mention} role.", "light_green"
         )
-        return [True, embed]
+        return (True, embed)
 
 
-async def roles(ctx: discord.Context, bot: discord.Bot) -> Union(bool, discord.Embed):
+async def roles(
+    ctx: discord.ext.commands.Context, bot: discord.ClientUser.bot
+) -> Tuple[bool, discord.Embed]:
     """Lists out this server's roles
 
     Args:
-        ctx (discord.Context): Context
-        bot (discord.Bot): Bot
+        ctx (discord.ext.commands.Context): Context
+        bot (discord.ClientUser.bot): Bot
 
     Returns:
         Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
@@ -80,26 +85,26 @@ async def roles(ctx: discord.Context, bot: discord.Bot) -> Union(bool, discord.E
             for i in db.grab_roles()
         ]
     except:
-        return [
+        return (
             False,
             "This server has no roles.  Have an administrator run /roles create.",
-        ]
+        )
 
     if len(all_roles) == 0:
-        return [
+        return (
             False,
             "This server has no roles.  Have an administrator run /roles create.",
-        ]
+        )
 
     await page_command(ctx, bot, all_roles, "Roles")
     return True
 
 
-async def add_role(ctx: discord.Context, name: str, role_id: int):
+async def add_role(ctx: discord.ext.commands.Context, name: str, role_id: int):
     """Adds a role to the dataabase
 
     Args:
-        ctx (discord.Context): Context
+        ctx (discord.ext.commands.Context): Context
         name (str): Name of the role (denominator)
         role_id (int): The role's ID
     """
@@ -142,7 +147,7 @@ async def remove_role(ctx, role_id: int):
     """Removes a role from the database
 
     Args:
-        ctx (discord.Context): Context
+        ctx (discord.ext.commands.Context): Context
         role_id (int): The ID of the role
     """
 

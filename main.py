@@ -7,6 +7,7 @@ from methods.database import create_database, Guild_Info
 from commands.commands import custom_command_handling
 from commands.programs import programs_reaction_handling
 from commands.welcome import welcome_handling
+from courses.database.pull_courses import pull_courses
 
 load_dotenv()
 
@@ -34,11 +35,9 @@ bot.remove_command("help")
 async def on_ready():
     """When the bot starts up."""
 
-    port = os.environ.get("database_port")
-    if port:
-        create_database(os.environ.get("database_password"), port=port)
-    else:
-        create_database(os.environ.get("database_password"))
+    create_database()
+
+    # pull_courses()
 
     # Default Settings Check
     guilds_on = [guild.id for guild in bot.guilds]

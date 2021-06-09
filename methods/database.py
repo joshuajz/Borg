@@ -3,8 +3,29 @@ from dotenv import load_dotenv
 import os
 
 
-def create_database(password: str, port="5432"):
+def get_credentials():
+    cwd = os.getcwd().split("/")
+    while cwd[-1] != "Borg":
+        try:
+            os.chdir("..")
+        except:
+            print(
+                "Error moving directories.  Make sure you haven't renamed the folder that Borg resides in."
+            )
+            return
+
+    load_dotenv()
+    port = os.environ.get("database_port")
+    if port is None or port == "" or port == " ":
+        port = "5432"
+
+    return os.environ.get("database_password"), port
+
+
+def create_database():
     """Create the default postgresql database."""
+
+    password, port = get_credentials()
 
     print("Creating Database.")
 
@@ -28,10 +49,10 @@ def create_database(password: str, port="5432"):
         cursor.execute("""CREATE database borg""")
     except:
         print("Database Already Created.")
-        return database_connection(password, port)
+        return database_connection()
 
     # Connect to the borg database
-    con, cursor = database_connection(password, port)
+    con, cursor = database_connection()
 
     # Create the tables
     commands = [
@@ -63,6 +84,18 @@ def create_database(password: str, port="5432"):
         message text,
         enabled boolean
     )""",
+        """CREATE TABLE courses (
+            school text,
+            code varchar(25),
+            number smallint,
+            department varchar(200),
+            name text,
+            description text,
+            requirements text,
+            academic_level text,
+            units decimal,
+            campus text
+    )""",
     ]
 
     for command in commands:
@@ -71,8 +104,10 @@ def create_database(password: str, port="5432"):
     return con, cursor
 
 
-def database_connection(password: str, port="5432") -> tuple:
+def database_connection() -> tuple:
     """Creates a connection to the Borg database."""
+
+    password, port = get_credentials()
 
     # Connect
     con = psycopg2.connect(
@@ -92,18 +127,9 @@ class Guild_Info:
     def __init__(self, guild_id: int):
         """Initalizes self.guild_id & a database connection."""
         self.guild_id = guild_id
-        load_dotenv()
-        port = os.environ.get("database_port")
 
         # Grab a database connection
-        if port:
-            result = database_connection(
-                os.environ.get("database_password"),
-                port=os.environ.get("database_port"),
-            )
-        else:
-            result = database_connection(os.environ.get("database_password"))
-        self.db, self.cursor = result
+        self.db, self.cursor = database_connection()
 
     def grab_settings(self) -> dict:
         """Fetches the server's settings.

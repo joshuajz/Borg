@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from discord_slash import cog_ext, SlashContext
+from discord_slash import cog_ext
 from commands.course import course as call_course
 from discord_slash.utils.manage_commands import create_option, create_choice
 
@@ -27,7 +27,7 @@ class Slash_Help(commands.Cog):
                 choices=[
                     create_choice(name="Queens University", value="queens"),
                     create_choice(name="University of Waterloo", value="waterloo"),
-                    create_choice(name='University of Toronto', value='uoft')
+                    create_choice(name="University of Toronto", value="uoft"),
                 ],
             ),
         ],
@@ -48,7 +48,7 @@ class Slash_Help(commands.Cog):
 
             course = final
 
-        await call_course(ctx, course, school)
+        await call_course(ctx, self.bot, course, school)
 
 
 def setup(bot):
