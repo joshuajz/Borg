@@ -21,6 +21,7 @@ class Slash_Custom_Commands(commands.Cog):
         description="Lists all of the server's custom commands.",
     )
     async def _command_list(self, ctx):
+        """/command list"""
         result = await custom_command_list(self.bot, ctx)
 
         if result[0]:
@@ -54,6 +55,7 @@ class Slash_Custom_Commands(commands.Cog):
         ],
     )
     async def _command_add(self, ctx, name, description, image=None):
+        """/command add"""
         command_add = await custom_command_add(ctx, name, description, image)
 
         await ctx.send(embed=command_add, hidden=True)
@@ -72,6 +74,7 @@ class Slash_Custom_Commands(commands.Cog):
         ],
     )
     async def _command_remove(self, ctx, name):
+        """/command remove"""
         command_remove = await custom_command_remove(
             ctx, name[1::] if name[0] == "!" else name
         )
@@ -92,6 +95,7 @@ class Slash_Custom_Commands(commands.Cog):
         ],
     )
     async def _command_use(self, ctx, command):
+        """/command use"""
         await custom_command_handling(ctx, command)
 
 

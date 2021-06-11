@@ -3,6 +3,8 @@ import sqlite3
 from methods.embed import create_embed, add_field
 import json
 import os
+from methods.database import database_connection
+from methods.paged_command import page_command
 
 # Options:
 # User provides course and school -> return the course if it exists, otherwise return a list of courses in that faculty
@@ -14,92 +16,76 @@ COURSE_IMAGES = json.load(open(f"{ROOT_DIR}/courses/icons/uploaded_icons.json", 
 SCHOOLS = ("queens", "waterloo", "uoft")
 
 
-async def queens_embed(course):
+async def course_embed(course):
+    if course[0] == "queens":
+        requirements, academic_level, units = True, True, True
+    elif course[0] == "waterloo":
+        requirements, academic_level, units = True, False, False
+    # elif course[0] == 'uoft':
+
     embed = create_embed(
-        f"{course[0]} - {course[3]}",
-        course[4],
+        f"{course[1]} - {course[4]}",
+        course[5],
         "cyan",
-        thumbnail=COURSE_IMAGES["queens"],
+        thumbnail=COURSE_IMAGES[course[0]],
     )
 
-    requirements = course[5]
-    if requirements is None or requirements == "":
-        requirements = (
-            "Unknown/No requirements.  Check the Queens website for more information."
-        )
+    if requirements:
+        if course[0] == "queens":
+            requirements = course[6]
+            if requirements is None or requirements == "":
+                requirements = "Unknown/No Requirements.  Check the website."
+            else:
+                requirements = requirements.replace(". ", ".\n")
+        elif course[0] in ["waterloo"]:
+            requirements = course[6]
+            if requirements is None:
+                requirements = "Unknown/No Requirements.  Check the university website."
+        else:
+            requirements = course[6]
 
-    add_field(embed, "Requirements", requirements.replace(". ", ".\n"), False)
-    add_field(embed, "Academic Level", course[6], True)
-    add_field(embed, "Units", course[7], True)
+        add_field(embed, "Requirements", requirements, False)
 
-    return embed
+    if academic_level:
+        add_field(embed, "Academic Level", course[7], True)
 
-
-async def uoft_embed(course):
-    print()
-
-
-async def waterloo_embed(course):
-    embed = create_embed(
-        f"{course[0]} - {course[3]}",
-        course[4],
-        "cyan",
-        thumbnail=COURSE_IMAGES["waterloo"],
-    )
-
-    requirements = course[5]
-    if requirements is None or requirements == "":
-        requirements = (
-            "Unknown/No Requirements.  Check the Waterloo website for more information."
-        )
-
-    add_field(embed, "Requirements", requirements, False)
-
-    return embed
+    if units:
+        add_field(embed, "Units", course[8], True)
 
 
-SCHOOL_EMBEDS = {"queens": queens_embed, "waterloo": waterloo_embed, "uoft": uoft_embed}
-
-
-async def course(ctx, course, school):
-    db = course_database()
+async def course(ctx, bot, course, school=None):
+    db, cursor = database_connection()
 
     if school:
-        course_fetched = (
-            db["db"]
-            .execute(f"SELECT * FROM {school} WHERE id = (?)", (course,))
-            .fetchall()
+        cursor.execute(
+            "SELECT * FROM courses WHERE school = %s AND code = %s", (school, course)
         )
+        course_fetched = cursor.fetchall()
 
-        # Found the course
-        if len(course_fetched) == 1:
-            embed = await SCHOOL_EMBEDS[school](course_fetched[0])
-            await ctx.send(embed=embed)
-        elif len(course_fetched) == 0:
+        if course_fetched is None or len(course_fetched) == 0:
             faculty = grab_faculty(course)
 
+            cursor.execute(
+                "SELECT COUNT(department) FROM courses WHERE school = %s AND department = %s",
+                (school, faculty),
+            )
+
             # Check to see if a proper faculty was provided
-            if (
-                db["db"].execute(
-                    "SELECT COUNT(department) FROM (?) WHERE department = (?)",
-                    (school, faculty),
+            if cursor.fetchone() is None:
+                cursor.execute(
+                    "SELECT code FROM courses WHERE school = %s AND department = %s",
+                    (school, faculty.strip().upper()),
                 )
-            ) > 0:
+                multiple_courses = cursor.fetchall()
+                multiple_courses = [f"**{i[1]}** - *{i[4]}*" for i in multiple_courses]
+                multiple_courses.sort()
 
-                multiple_courses = (
-                    db["db"]
-                    .execute(
-                        "SELECT id FROM (?) WHERE department = (?)", (school, faculty)
-                    )
-                    .fetchall()
+                await page_command(
+                    ctx,
+                    bot,
+                    multiple_courses,
+                    f"{school.capitalize()} Courses w/ the {faculty} department.",
                 )
-
-                embed = create_embed(
-                    "Invalid Course Code.",
-                    f'The code you provided was invalid.  Here are some courses from the same school and department: {", ".join(multiple_courses)}',
-                    "cyan",
-                )
-                await ctx.send(embed=embed, hidden=True)
             else:
                 embed = create_embed(
                     "Invalid Course Code",
@@ -107,39 +93,66 @@ async def course(ctx, course, school):
                     "cyan",
                 )
                 await ctx.send(embed=embed, hidden=True)
+        elif len(course_fetched) == 1:
+            embed = await course_embed(course_fetched[0])
+            await ctx.send(embed=embed)
+
     else:
         # We don't have a school so we're going to need to query every school that we have for that course code
         results = grab_courses(course)
 
         if len(results) == 0:
-            await ctx.send(
-                "Invalid Course Code.  I could not find that course at any of the schools in my database.",
-                hidden=True,
+            print(course.strip())
+            cursor.execute(
+                "SELECT school FROM courses WHERE department = %s",
+                (course.strip().upper(),),
             )
+            results = cursor.fetchall()
+            if results is not None:
+                results = [i[0] for i in results]
+                results = list(dict.fromkeys(results))
+
+                if len(results) == 1:
+                    cursor.execute(
+                        "SELECT * FROM courses WHERE school = %s AND department = %s",
+                        (results[0], course.strip().upper()),
+                    )
+
+                    courses = cursor.fetchall()
+                    courses = [f"**{i[1]}** - *{i[4]}*" for i in courses]
+                    await page_command(
+                        ctx,
+                        bot,
+                        courses,
+                        f"{results[0].capitalize()} Courses w/ the {course.strip().upper()} department.",
+                    )
+                    return
+            else:
+                await ctx.send(
+                    "You provided a valid department, but multiple schools share that same department name.  Please provide a department and school name.",
+                    hidden=True,
+                )
         elif len(results) == 1:
             for school, course in results.items():
-                embed = await SCHOOL_EMBEDS[school](course)
+                embed = await course_embed(course)
                 await ctx.send(embed=embed)
         else:
             # Multiple courses provided.
-            await ctx.send(
-                "Multiple schools have that course, please provide a school.",
-                hidden=True,
-            )
+            courses = [f"{i[0].capitalize()}: {i[1]}" for i in results]
+            await page_command(ctx, bot, courses, "Possible Courses & Schools:")
 
 
 def grab_courses(course):
-    db = course_database()
+    db, cursor = database_connection()
 
     results = {}
 
     for school in SCHOOLS:
-
-        result = (
-            db["db"]
-            .execute(f"SELECT * FROM {school} WHERE id = (?)", (course,))
-            .fetchone()
+        cursor.execute(
+            "SELECT * FROM courses WHERE school = %s AND code = %s", (school, course)
         )
+        result = cursor.fetchone()
+
         if result:
             results[school] = result
 
@@ -152,8 +165,3 @@ def grab_faculty(course):
         if l.isalpha():
             final += l
     return final
-
-
-def course_database():
-    con = sqlite3.connect(f"{ROOT_DIR}/courses/database/database.db")
-    return {"db": con.cursor(), "con": con}

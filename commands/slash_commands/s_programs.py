@@ -37,7 +37,7 @@ class Slash_Programs(commands.Cog):
         ],
     )
     async def _programs_add(self, ctx, programs, user=None):
-
+        """/programs add"""
         # Determines the user to add the programs to
         if user is not None and ctx.author.guild_permissions.administrator:
             user = parse_channel(user)
@@ -70,6 +70,7 @@ class Slash_Programs(commands.Cog):
         ],
     )
     async def _programs_setup(self, ctx, channel):
+        """/programs setup"""
         if ctx.author.guild_permissions.administrator != True:
             await ctx.send(
                 "You cannot run this command as you do not have administrator permissions.  Ask an admin to run /programs setup.",
@@ -95,6 +96,7 @@ class Slash_Programs(commands.Cog):
         ],
     )
     async def _programs(self, ctx, user):
+        """/programs"""
         result = await programs(ctx, self.bot, user.id)
         await ctx.send(embed=result[1])
 
@@ -124,6 +126,7 @@ class Slash_Programs(commands.Cog):
         ],
     )
     async def _programs_edit(self, ctx, program_num, new_text, user=None):
+        """/programs edit"""
         if user == None:
             user = ctx.author.id
 
@@ -151,6 +154,7 @@ class Slash_Programs(commands.Cog):
         ],
     )
     async def _programs_remove(self, ctx, removal, user=None):
+        """/programs remove"""
         if user == None:
             user = ctx.author.id
         else:

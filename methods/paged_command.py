@@ -26,6 +26,9 @@ async def page_command(ctx, bot, items: list, title: str):
 
         return user == ctx.author and str(reaction) in ["◀️", "▶️"]
 
+    if type(items) != list:
+        items = list(items)
+
     # Sort the items list
     items.sort()
 

@@ -2,22 +2,25 @@ import discord
 from methods.database import Guild_Info
 from methods.embed import create_embed, add_field, create_embed_template
 from methods.data import parse_id
-from typing import Union
+from typing import Tuple
 
 
 async def programs_add(
-    ctx: discord.Context, client: discord.Bot, programs: list, user: int
-) -> Union(bool, discord.Embed):
+    ctx: discord.ext.commands.Context,
+    client: discord.ClientUser.bot,
+    programs: list,
+    user: int,
+) -> Tuple[bool, discord.Embed]:
     """Creates a request to add programs for a user
 
     Args:
-        ctx (discord.Context): Context
-        client (discord.Bot): Discord Bot
+        ctx (discord.ext.commands.Context): Context
+        client (discord.ClientUser.bot): Discord Bot
         programs (list): List of programs to add
         user (int): User's ID to add
 
     Returns:
-        Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
+        Tuple(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
     """
 
     db = Guild_Info(ctx.guild.id)
@@ -25,14 +28,14 @@ async def programs_add(
     # Channel for verification
     settings = db.grab_settings()
     if settings is None or settings["programs_channel"] is None:
-        return [
+        return (
             False,
             create_embed_template(
                 "No Programs Channel",
                 "The admins haven't created a programs channel.  Have an admin run /programs setup.",
                 "error",
             ),
-        ]
+        )
 
     programs_channel = settings["programs_channel"]
 
@@ -60,26 +63,26 @@ async def programs_add(
     for emoji in ["✅", "❌"]:
         await verification_msg.add_reaction(emoji)
 
-    return [
+    return (
         True,
         create_embed(
             "Programs successfully sent to Moderators.", programs_msg, "light_green"
         ),
-    ]
+    )
 
 
 async def programs_remove(
-    ctx: discord.Context, programs: str, user=None
-) -> Union(bool, discord.Embed):
+    ctx: discord.ext.commands.Context, programs: str, user=None
+) -> Tuple[bool, discord.Embed]:
     """Allows a user to remove programs
 
     Args:
-        ctx (discord.Context): Context
+        ctx (discord.ext.commands.Context): Context
         programs (str): The programs to remove
         user (int, optional): The user ID to remove programs from. Defaults to None.
 
     Returns:
-        Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
+        Tuple[bool, discord.Embed]: [Status: bool, Embed: discord.Embed]
     """
 
     # Determines the user id
@@ -87,14 +90,14 @@ async def programs_remove(
         user_id = user
     elif user is not None:
         if ctx.author.guild_permissions.administrator == False:
-            return [
+            return (
                 False,
                 create_embed_template(
                     "No Permission",
                     "You do not have permission to remove programs for other users.",
                     "error",
                 ),
-            ]
+            )
 
         else:
             user_id = user
@@ -110,10 +113,10 @@ async def programs_remove(
             (ctx.guild.id, user_id),
         )
 
-        return [
+        return (
             True,
             create_embed("Removed **all** program successfully.", "", "light_green"),
-        ]
+        )
 
     remove_programs = []
 
@@ -125,14 +128,14 @@ async def programs_remove(
     try:
         remove_programs = [int(i) for i in remove_programs]
     except:
-        return [
+        return (
             False,
             create_embed_template(
                 "Invalid Values",
                 "Invalid removal values were provided.  Provide a number corrosponding to the program(s) you would like to remove.",
                 "error",
             ),
-        ]
+        )
 
     # All programs
     all_programs = {}
@@ -152,14 +155,14 @@ async def programs_remove(
             (ctx.guild.id, user_id),
         )
 
-        return [
+        return (
             True,
             create_embed(
                 "Programs removed Successfully.",
                 "You now have no programs!",
                 "light_green",
             ),
-        ]
+        )
 
     # Message with the current programs list
     message = ""
@@ -172,7 +175,7 @@ async def programs_remove(
         (message, ctx.guild.id, user_id),
     )
 
-    return [
+    return (
         True,
         create_embed(
             "Programs Removed Successfully.",
@@ -181,52 +184,56 @@ async def programs_remove(
             else f"All of your programs have been removed.",
             "light_green",
         ),
-    ]
+    )
 
 
 async def programs_edit(
-    ctx: discord.Context, client: discord.Bot, user: int, before: str, after: str
-) -> Union(bool, discord.Embed):
+    ctx: discord.ext.commands.Context,
+    client: discord.ClientUser.bot,
+    user: int,
+    before: str,
+    after: str,
+) -> Tuple[bool, discord.Embed]:
     """Edits one of a user's programs
 
     Args:
-        ctx (discord.Context): Context
-        client (discord.Bot): Bot instance
+        ctx (discord.ext.commands.Context): Context
+        client (discord.ClientUser.bot): Bot instance
         user (int): User's ID
         before (str): The program to edit
         after (str): The new text to replace the program
 
     Returns:
-        Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
+        Tuple[bool, discord.Embed]: [Status: bool, Embed: discord.Embed]
     """
 
     # Check user
     if user is None:
-        return [
+        return (
             False,
             create_embed_template("Invalid Arguments", "User was null.", "error"),
-        ]
+        )
 
     # Check before and after
     if before is None or after is None:
-        return [
+        return (
             False,
             create_embed_template(
                 "Invalid Arguments", "*Before* or *after* value is invalid.", "error"
             ),
-        ]
+        )
 
     try:
         before = int(before)
     except:
-        return [
+        return (
             False,
             create_embed_template(
                 "Invalid Arguments",
                 "*Before* value is invalid (not a number).",
                 "error",
             ),
-        ]
+        )
 
     user = parse_id(user)
 
@@ -235,14 +242,15 @@ async def programs_edit(
     # Channel for verification
     settings = db.grab_settings()
     if settings is None or settings["programs_channel"] is None:
-        return [
+        return (
             False,
             create_embed_template(
                 "Invalid Channel",
                 "The admins haven't created a programs channel.  Have an admin run /programs setup.",
                 "error",
             ),
-        ]
+        )
+
     programs_channel = settings["programs_channel"]
 
     programs = db.grab_programs(user).split("\n")
@@ -255,14 +263,14 @@ async def programs_edit(
         i += 1
 
     if before not in p.keys():
-        return [
+        return (
             False,
             create_embed_template(
                 "Invalid Program",
                 "You do not have a program with that *before* value.",
                 "error",
             ),
-        ]
+        )
 
     # Create a verification Embed
     embed = create_embed("Programs (Edit) Verification Required", "", "magenta")
@@ -283,27 +291,27 @@ async def programs_edit(
     add_field(embed, "Before", p[before], True)
     add_field(embed, "After", after, True)
 
-    return [True, embed]
+    return (True, embed)
 
 
-async def programs(ctx, bot, user: str) -> Union(bool, discord.Embed):
+async def programs(ctx, bot, user: str) -> Tuple[bool, discord.Embed]:
     """Display's a user's programs
 
     Args:
-        ctx (discord.Context): Context
-        bot (discord.Bot): Bot
+        ctx (discord.ext.commands.Context): Context
+        bot (discord.ClientUser.bot): Bot
         user (str): User's programs to display
 
     Returns:
-        Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
+        Tuple[bool, discord.Embed]: [Status: bool, Embed: discord.Embed]
     """
 
     # Check
     if user is None:
-        return [
+        return (
             False,
             create_embed_template("Invalid Arguments", "User was Null.", "error"),
-        ]
+        )
 
     # Gets the user's id
     user = parse_id(user)
@@ -315,14 +323,14 @@ async def programs(ctx, bot, user: str) -> Union(bool, discord.Embed):
 
     # Empty list
     if programs_list is None:
-        return [
+        return (
             False,
             create_embed_template(
                 "Invalid User",
                 "That user doesn't have any programs, have them use /programs add.",
                 "error",
             ),
-        ]
+        )
 
     programs_list = programs_list.split("\n")
 
@@ -340,23 +348,23 @@ async def programs(ctx, bot, user: str) -> Union(bool, discord.Embed):
 
     user = bot.get_user(user)
 
-    return [
+    return (
         True,
         create_embed(f"{user.name}#{user.discriminator}'s Programs", message, "orange"),
-    ]
+    )
 
 
 async def programs_setup(
-    ctx: discord.Context, channel: int
-) -> Union(bool, discord.Embed):
+    ctx: discord.ext.commands.Context, channel: int
+) -> Tuple[bool, discord.Embed]:
     """Allows an administrator to setup a programs channel
 
     Args:
-        ctx (discord.Context): Context
+        ctx (discord.ext.commands.Context): Context
         channel (int): The channel for programs verification commands
 
     Returns:
-        Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
+        Tuple[bool, discord.Embed]: [Status: bool, Embed: discord.Embed]
     """
 
     if ctx.author.guild_permissions.administrator != True:
@@ -371,20 +379,22 @@ async def programs_setup(
         (channel, ctx.guild.id),
     )
 
-    return [
+    return (
         "True",
         create_embed(
             f"Programs Setup Successfully.", f"Channel: <#{channel}>", "light_green"
         ),
-    ]
+    )
 
 
-async def programs_reaction_handling(ctx: discord.Context, client: discord.Bot) -> bool:
+async def programs_reaction_handling(
+    ctx: discord.ext.commands.Context, client: discord.ClientUser.bot
+) -> bool:
     """Handles Reactions for programs verification
 
     Args:
-        ctx (discord.Context): Context
-        client (discord.Bot): Bot
+        ctx (discord.ext.commands.Context): Context
+        client (discord.ClientUser.bot): Bot
 
     Returns:
         bool: If it was a programs related reaction
