@@ -33,6 +33,7 @@ class Slash_Help(commands.Cog):
         ],
     )
     async def _course(self, ctx, course, school=None):
+        """/course"""
         if " " in course:
             course = course.split(" ")
             course = f"{course[0].upper()}-{course[1]}"

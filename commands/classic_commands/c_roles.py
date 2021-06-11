@@ -13,6 +13,7 @@ class Classic_Roles(commands.Cog):
 
     @commands.command(name="roles")
     async def _roles(self, ctx):
+        """!roles command"""
         result = await roles(ctx, self.bot)
 
         if result != True:
@@ -20,6 +21,7 @@ class Classic_Roles(commands.Cog):
 
     @commands.command(name="role")
     async def _role(self, ctx, role: str):
+        """!role command"""
         result = await role_toggle(ctx, role.lower())
 
         if result[0] == False:

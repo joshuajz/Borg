@@ -21,6 +21,7 @@ class Classic_Programs(commands.Cog):
 
     @commands.command(name="programs")
     async def _programs(self, ctx):
+        """!programs command"""
         content = ctx.message.content.split(" ")
         if len(content) == 1:
             embed = create_embed(
