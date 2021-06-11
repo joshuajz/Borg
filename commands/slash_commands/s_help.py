@@ -13,6 +13,7 @@ class Slash_Help(commands.Cog):
         description="Displays the help command.",
     )
     async def _help(self, ctx):
+        """/help"""
         await help_command(ctx, self.bot)
 
 

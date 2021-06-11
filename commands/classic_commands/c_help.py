@@ -12,6 +12,7 @@ class Classic_Help(commands.Cog):
 
     @commands.command(name="help")
     async def _help(self, ctx):
+        """!help command"""
         await help_command(ctx, self.bot)
 
 

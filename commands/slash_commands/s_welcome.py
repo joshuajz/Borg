@@ -29,6 +29,7 @@ class Slash_Welcome(commands.Cog):
         ],
     )
     async def _welcome_setup(self, ctx, message, channel):
+        """/welcome setup"""
         await welcome_setup(ctx, channel.id, message)
 
     @cog_ext.cog_subcommand(
@@ -37,6 +38,7 @@ class Slash_Welcome(commands.Cog):
         description="Allows an administrator to turn on/off the welcome messages.",
     )
     async def _welcome_toggle(self, ctx):
+        """/welcome toggle"""
         await welcome_toggle(ctx)
 
 

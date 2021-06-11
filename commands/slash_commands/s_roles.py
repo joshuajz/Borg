@@ -25,6 +25,7 @@ class Slash_Roles(commands.Cog):
         ],
     )
     async def _roles_role(self, ctx, role):
+        """/roles role"""
         result = await role_toggle(ctx, role.lower())
 
         if result[0] == False:
@@ -63,6 +64,7 @@ class Slash_Roles(commands.Cog):
         ],
     )
     async def _roles_add(self, ctx, name, role):
+        """/roles create"""
         if not name[0].isalpha():
             await ctx.send(
                 "Ensure the first letter of your role name is a letter of the alphabet!",
@@ -100,6 +102,7 @@ class Slash_Roles(commands.Cog):
         ],
     )
     async def _roles_remove(self, ctx, role_name=None, role=None):
+        """/roles remove"""
         if role_name is not None:
             if role_name[0] == "!":
                 role_name = role[1::]
