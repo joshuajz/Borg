@@ -225,7 +225,7 @@ class Guild_Info:
 
         self.cursor.execute(
             "DELETE FROM custom_commands WHERE guild_id = %s AND command = %s",
-            (self.guild.id, command),
+            (self.guild_id, command),
         )
 
     def grab_roles(self) -> list:

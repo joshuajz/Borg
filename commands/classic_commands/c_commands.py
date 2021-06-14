@@ -43,15 +43,49 @@ class Classic_Custom_Commands(commands.Cog):
             if subcommand == "add" or subcommand == "a":
                 # ex: !command add hello hello
 
+                # ex: !command add hi
+                # hi
+                if len(msg) == 3:
+                    if "\n" in msg[2]:
+                        command_input = msg[2].split("\n")
+                        command = (
+                            command_input[0][1::]
+                            if command_input[0][0] == "!"
+                            else command_input[0]
+                        )
+
+                        description = command_input[1]
+
+                        if description.startswith("image="):
+                            image = description.split("image=")[1]
+                            description = None
+                        else:
+                            image = None
+
+                        result = await custom_command_add(
+                            ctx, command, description, image
+                        )
+                        await ctx.send(embed=result[1])
+
                 # We have enough arguments for adding a command
-                if len(msg) >= 4:
+                elif len(msg) >= 4:
+                    print(f"msg: {msg}")
                     command = msg[2][1::] if msg[2][0] == "!" else msg[2]
+
                     if msg[-1].startswith("image="):
                         image = msg[-1].split("image=")[1]
                         description = " ".join(msg[3:-1])
                     else:
                         image = None
                         description = " ".join(msg[3::])
+
+                    if "\n" in command:
+                        command_values = command.split("\n")
+                        command = command_values[0]
+                        if description:
+                            description = command_values[1] + " " + description
+                        else:
+                            description = command_values[1]
 
                     result = await custom_command_add(ctx, command, description, image)
                     await ctx.send(embed=result[1])
