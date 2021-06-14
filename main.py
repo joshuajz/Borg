@@ -35,19 +35,18 @@ bot.remove_command("help")
 async def on_ready():
     """When the bot starts up."""
 
-    create_database()
+    await create_database()
 
-    # pull_courses()
+    # await pull_courses()
 
     # Default Settings Check
     guilds_on = [guild.id for guild in bot.guilds]
-    db = Guild_Info(0)
-    db.cursor.execute("SELECT guild_id FROM settings")
-    guilds_db = db.cursor.fetchall()
+    database = await Guild_Info(0)
+    guilds_db = await database.db.fetch("SELECT guild_id FROM settings")
     if guilds_db is not None:
         for guild in guilds_on:
             if guild not in guilds_db:
-                Guild_Info(guild).create_default_settings()
+                await (await Guild_Info(guild)).create_default_settings()
 
     print(f"Logged in as {bot.user}.")
 

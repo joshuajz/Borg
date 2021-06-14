@@ -1,9 +1,11 @@
-import psycopg2
+import asyncpg
 from dotenv import load_dotenv
 import os
+import asyncio
+from asyncinit import asyncinit
 
 
-def get_credentials():
+async def get_credentials():
     cwd = os.getcwd().split("/")
     while cwd[-1] != "Borg":
         try:
@@ -17,20 +19,20 @@ def get_credentials():
     load_dotenv()
     port = os.environ.get("database_port")
     if port is None or port == "" or port == " ":
-        port = "5432"
+        port = None
 
     return os.environ.get("database_password"), port
 
 
-def create_database():
+async def create_database():
     """Create the default postgresql database."""
 
-    password, port = get_credentials()
+    password, port = await get_credentials()
 
     print("Creating Database.")
 
     # Connect to the default database
-    con = psycopg2.connect(
+    con = await asyncpg.connect(
         database="postgres",
         user="postgres",
         password=password,
@@ -38,21 +40,15 @@ def create_database():
         port=port,
     )
 
-    # Auto commit changes
-    con.autocommit = True
-
-    # Create Borg's database
-    cursor = con.cursor()
-
     # Create the Borg database
     try:
-        cursor.execute("""CREATE database borg""")
+        con.cursor("""CREATE database borg""")
     except:
         print("Database Already Created.")
-        return database_connection()
+        return await database_connection()
 
     # Connect to the borg database
-    con, cursor = database_connection()
+    con = await database_connection()
 
     # Create the tables
     commands = [
@@ -99,39 +95,44 @@ def create_database():
     ]
 
     for command in commands:
-        cursor.execute(command)
+        async with con.transaction():
+            try:
+                await con.execute(command)
+            except asyncpg.exceptions.DuplicateTableError as e:
+                print(e)
 
-    return con, cursor
+    return con
 
 
-def database_connection() -> tuple:
+async def database_connection():
     """Creates a connection to the Borg database."""
 
-    password, port = get_credentials()
+    password, port = await get_credentials()
 
     # Connect
-    con = psycopg2.connect(
-        database="borg", user="postgres", password=password, host="localhost", port=port
+    con = await asyncpg.connect(
+        database="borg",
+        user="postgres",
+        password=password,
+        host="localhost",
+        port=int(port),
     )
 
-    # Turn auto automatic commits
-    con.autocommit = True
-
-    cursor = con.cursor()
-    return (con, cursor)
+    return con
 
 
+@asyncinit
 class Guild_Info:
     """The Guild_Info class.  Provides all of the functions required for dealing with the Borg database."""
 
-    def __init__(self, guild_id: int):
+    async def __init__(self, guild_id: int):
         """Initalizes self.guild_id & a database connection."""
         self.guild_id = guild_id
 
         # Grab a database connection
-        self.db, self.cursor = database_connection()
+        self.db = await database_connection()
 
-    def grab_settings(self) -> dict:
+    async def grab_settings(self) -> dict:
         """Fetches the server's settings.
 
         Returns:
@@ -142,20 +143,21 @@ class Guild_Info:
                 }
         """
 
-        grab_info = self.cursor.execute(
-            "SELECT * FROM settings WHERE guild_id = %s", (self.guild_id,)
+        grab_info = await self.db.fetchrow(
+            "SELECT * FROM settings WHERE guild_id = $1", self.guild_id
         )
-        try:
-            grab_info = self.cursor.fetchone()
+
+        if len(grab_info) == 1:
+            grab_info = grab_info.values()
             settings = {
                 "programs_channel": grab_info[1],
                 "course_default_school": grab_info[2],
             }
             return settings
-        except:
+        else:
             return None
 
-    def grab_welcome(self) -> dict:
+    async def grab_welcome(self) -> dict:
         """Fetches a server's welcome settings.
 
         Returns:
@@ -167,11 +169,11 @@ class Guild_Info:
                 }
         """
 
-        self.cursor.execute(
-            "SELECT * FROM welcome WHERE user_id = %s", (self.guild_id,)
+        data_pull = await self.db.fetchrow(
+            "SELECT * FROM welcome WHERE user_id = $1", self.guild_id
         )
+
         try:
-            data_pull = self.cursor.fetchone()
             welcome = {
                 "channel": data_pull[1],
                 "message": data_pull[2],
@@ -181,7 +183,7 @@ class Guild_Info:
         except:
             return None
 
-    def grab_commands(self) -> list:
+    async def grab_commands(self) -> list:
         """Fetches all of the commands for the server.
 
         Returns:
@@ -193,16 +195,17 @@ class Guild_Info:
                 )
         """
 
-        self.cursor.execute(
-            "SELECT command, output, image FROM custom_commands WHERE guild_id = %s",
-            (self.guild_id,),
+        commands = self.db.fetch(
+            "SELECT command, output, image FROM custom_commands WHERE guild_id = $1",
+            self.guild_id,
         )
+
         try:
-            return self.cursor.fetchall()
+            return commands
         except:
             return None
 
-    def add_command(self, name: str, description: str, image=None):
+    async def add_command(self, name: str, description: str, image=None):
         """Adds a command to the database.
 
         Args:
@@ -211,24 +214,38 @@ class Guild_Info:
             image (str, optional): A link to an image to embed. Defaults to None.
         """
 
-        self.cursor.execute(
-            "INSERT INTO custom_commands VALUES (%s, %s, %s, %s)",
-            (self.guild_id, name, description, image),
-        )
+        async with self.db.transaction():
+            try:
+                await self.db.execute(
+                    "INSERT INTO custom_commands VALUES ($1, $2, $3, $4)",
+                    self.guild_id,
+                    name,
+                    description,
+                    image,
+                )
 
-    def remove_command(self, command: str):
+            except Exception as e:
+                print(e)
+
+    async def remove_command(self, command: str):
         """Removes a command from the database.
 
         Args:
             command (str): The name or denominator for the command.
         """
 
-        self.cursor.execute(
-            "DELETE FROM custom_commands WHERE guild_id = %s AND command = %s",
-            (self.guild_id, command),
-        )
+        async with self.db.transaction():
+            try:
+                await self.db.execute(
+                    "DELETE FROM custom_commands WHERE guild_id = $1 AND command = $2",
+                    self.guild_id,
+                    command,
+                )
 
-    def grab_roles(self) -> list:
+            except Exception as e:
+                print(e)
+
+    async def grab_roles(self) -> list:
         """Provides all of the roles on a server.
 
         Returns:
@@ -239,17 +256,17 @@ class Guild_Info:
                 )
         """
 
-        self.cursor.execute(
-            "SELECT role_id, command FROM command_roles WHERE guild_id = %s",
-            (self.guild_id,),
+        roles = await self.db.fetch(
+            "SELECT role_id, command FROM command_roles WHERE guild_id = $1",
+            self.guild_id,
         )
+
         try:
-            roles = self.cursor.fetchall()
             return roles
         except:
             return None
 
-    def grab_role(self, command=None, role_id=None) -> tuple:
+    async def grab_role(self, command=None, role_id=None) -> tuple:
         """Fetches a specific role.
 
         Args:
@@ -265,25 +282,30 @@ class Guild_Info:
                 )
         """
         if command:
-            self.cursor.execute(
-                "SELECT * FROM command_roles WHERE guild_id = %s AND command = %s",
-                (self.guild_id, command),
+            command_response = await self.db.fetchone(
+                "SELECT * FROM command_roles WHERE guild_id = $1 AND command = $2",
+                self.guild_id,
+                command,
             )
+
             try:
-                return self.cursor.fetchone()
-            except:
-                return None
-        elif role_id:
-            self.cursor.execute(
-                "SELECT * FROM command_roles WHERE guild_id = %s AND role_id = %s",
-                (self.guild_id, role_id),
-            )
-            try:
-                return self.cursor.fetchone()
+                return command_response
             except:
                 return None
 
-    def check_role(self, role_id, command) -> bool:
+        elif role_id:
+            command_response = await self.db.fetchone(
+                "SELECT * FROM command_roles WHERE guild_id = $1 AND role_id = $2",
+                self.guild_id,
+                role_id,
+            )
+
+            try:
+                return command_response
+            except:
+                return None
+
+    async def check_role(self, role_id, command) -> bool:
         """Checks to see if a role exists when adding a new role to the database.
 
         Args:
@@ -294,16 +316,16 @@ class Guild_Info:
             bool or None: Will return True if these values exist in the database, otherwise will return False.
         """
 
-        self.cursor.execute(
+        role_response = await self.db.fetchone(
             "SELECT EXISTS(SELECT * FROM command_roles WHERE guild_id = %s AND (role_id = %s OR command = %s))",
             (self.guild_id, role_id, command),
         )
         try:
-            return self.cursor.fetchone()
+            return role_response
         except:
             return False
 
-    def add_role(self, role_id, command):
+    async def add_role(self, role_id, command):
         """Adds a role to the database
 
         Args:
@@ -311,22 +333,35 @@ class Guild_Info:
             command (str): The command to call the role
         """
 
-        self.cursor.execute(
-            "INSERT INTO command_roles VALUES (%s, %s, %s)",
-            (self.guild_id, role_id, command),
-        )
+        async with self.db.transaction():
+            try:
+                await self.db.execute(
+                    "INSERT INTO command_roles VALUES ($1, $2, $3)",
+                    self.guild_id,
+                    role_id,
+                    command,
+                )
 
-    def remove_role(self, role_id):
+            except Exception as e:
+                print(e)
+
+    async def remove_role(self, role_id):
         """Removes a role from the database
 
         Args:
             role_id (int): The role's ID
         """
 
-        self.cursor.execute(
-            "DELETE FROM command_roles WHERE guild_id = %s AND role_id = %s",
-            (self.guild_id, role_id),
-        )
+        async with self.db.transaction():
+            try:
+                await self.db.execute(
+                    "DELETE FROM command_roles WHERE guild_id = $1 AND role_id = $2",
+                    self.guild_id,
+                    role_id,
+                )
+
+            except Exception as e:
+                print(e)
 
     def grab_programs(self, user_id: int) -> str:
         """Grabs all of a user's programs
@@ -338,19 +373,27 @@ class Guild_Info:
             str or None: None if the user has no programs.  A string containing all of the programs.  \n Seperated
         """
 
-        self.cursor.execute(
+        programs_response = self.cursor.fetchrow(
             "SELECT description FROM programs WHERE guild_id = %s AND user_id = %s",
             (self.guild_id, user_id),
         )
+
         try:
-            return (self.cursor.fetchone())[0]
+            return programs_response
         except:
             return None
 
-    def create_default_settings(self):
+    async def create_default_settings(self):
         """Creates the default settings value for a guild."""
 
-        self.cursor.execute(
-            "INSERT INTO settings(guild_id, programs_channel, courses_default_school) VALUES (%s, %s, %s)",
-            (self.guild_id, None, None),
-        )
+        async with self.db.transaction():
+            try:
+                await self.db.execute(
+                    "INSERT INTO settings(guild_id, programs_channel, courses_default_school) VALUES ($1, $2, $3)",
+                    self.guild_id,
+                    None,
+                    None,
+                )
+
+            except Exception as e:
+                print(e)

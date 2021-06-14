@@ -3,16 +3,13 @@ from courses.database.uoft import pull_values as p_uoft
 from courses.database.waterloo import pull_values as p_uw
 
 
-def pull_courses():
+async def pull_courses():
+    print()
+    # print("Pulling Queens Courses.")
+    # await p_queens()
 
-    print("Pulling Queens Courses.")
-    p_queens()
-    print("Finished Queens Courses.")
+    # print("Pulling UofT Courses")
+    # await p_uoft()
 
-    print("Pulling UofT Courses")
-    p_uoft()
-    print("Finished UofT Courses.")
-
-    print("Pulling Waterloo Courses.")
-    p_uw()
-    print("Finished Waterloo Courses.")
+    # print("Pulling Waterloo Courses.")
+    # await p_uw()

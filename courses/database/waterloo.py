@@ -15,7 +15,6 @@ while cwd[-1] != "Borg":
 
 load_dotenv()
 api_key = os.environ.get("waterloo_api")
-db, cursor = database_connection()
 
 
 def get_term():
@@ -55,7 +54,9 @@ def get_course(course, term=get_term()):
         return False
 
 
-def pull_values(courses=get_courses()):
+async def pull_values(courses=get_courses()):
+    db, cursor = await database_connection()
+
     def pull_numbers(string):
         final = ""
         for s in string:
@@ -105,3 +106,5 @@ def pull_values(courses=get_courses()):
                 campus,
             ),
         )
+
+    print("Finished Waterloo Courses.")

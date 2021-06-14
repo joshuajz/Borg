@@ -4,7 +4,6 @@ import re
 from methods.database import database_connection
 
 base = "https://nikel.ml/api/courses"
-db, cursor = database_connection()
 
 
 def get_info(offset=0):
@@ -18,18 +17,33 @@ def get_info(offset=0):
         return False
 
 
-def pull_values():
+async def pull_values():
+    db, cursor = await database_connection()
+
     offset = 0
     while True:
         info = get_info(offset)
         if info != False and len(info) != 0:
-            place_info(info)
+            await place_info(info, db, cursor)
             offset += 100
         else:
             break
 
+    print("Finished UofT Courses.")
 
-def place_info(courses: list):
+
+async def place_info(courses: list, db, cursor):
+    """
+    H1 - UTSG half year
+    Y1 - UTSG full year
+
+    H3 - UTSC half year
+    Y3 - UTSC full year
+
+    H5 - UTM half year
+    Y5 - UTM full year
+    """
+
     def split_code(code):
         r = re.compile("([a-zA-Z]+)([0-9]+)")
         m = r.match(code)
@@ -49,17 +63,6 @@ def place_info(courses: list):
         elif end[1] == "5":
             campus = "UTM"
         return academic_units, campus
-
-    """
-    H1 - UTSG half year
-    Y1 - UTSG full year
-
-    H3 - UTSC half year
-    Y3 - UTSC full year
-
-    H5 - UTM half year
-    Y5 - UTM full year
-    """
 
     cursor.execute("SELECT code FROM courses WHERE school = 'uoft'")
     in_database = [i[0] for i in cursor.fetchall()]
