@@ -69,7 +69,6 @@ class Classic_Custom_Commands(commands.Cog):
 
                 # We have enough arguments for adding a command
                 elif len(msg) >= 4:
-                    print(f"msg: {msg}")
                     command = msg[2][1::] if msg[2][0] == "!" else msg[2]
 
                     if msg[-1].startswith("image="):

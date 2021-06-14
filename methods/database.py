@@ -194,11 +194,15 @@ class Guild_Info:
                     image (None or str) # A link to an image to embed in the command
                 )
         """
+        commands = []
 
-        commands = self.db.fetch(
+        commands_db = await self.db.fetch(
             "SELECT command, output, image FROM custom_commands WHERE guild_id = $1",
             self.guild_id,
         )
+
+        for c in commands_db:
+            commands.append((c[0], c[1], c[2]))
 
         try:
             return commands

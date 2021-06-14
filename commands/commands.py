@@ -21,10 +21,10 @@ async def custom_command_list(
     """
 
     # Database
-    db = Guild_Info(ctx.guild.id)
+    db = await Guild_Info(ctx.guild.id)
 
     # List of commands
-    grab_commands = db.grab_commands()
+    grab_commands = await db.grab_commands()
 
     if grab_commands is None:
         return (
@@ -126,17 +126,24 @@ async def custom_command_add(
     else:
         urls = None
 
-    db = Guild_Info(ctx.guild.id)
+    db = await Guild_Info(ctx.guild.id)
 
     # Find all of the current commands
-    grab_commands = db.grab_commands()
+    grab_commands = await db.grab_commands()
 
     if grab_commands is not None:
-        command_list = [i[0] for i in db.grab_commands()]
+        command_list = [i[0] for i in grab_commands]
 
         # Ensure the current command is unique
         if name in command_list:
-            return (False, "There is already a command with that denominator.")
+            return (
+                False,
+                create_embed_template(
+                    "Invalid Command Name",
+                    "There is already a command with that denominator.",
+                    "error",
+                ),
+            )
 
     # Add it to the database
     db.add_command(name, description, image)
@@ -175,14 +182,14 @@ async def custom_command_remove(
             ),
         )
 
-    db = Guild_Info(ctx.guild.id)
+    db = await Guild_Info(ctx.guild.id)
 
     # Removes the ! from the command -> !hello turns into hello
     if command[0] == "!":
         command = command[1::]
 
     # Grabs all of the commands
-    grab_commands = db.grab_commands()
+    grab_commands = await db.grab_commands()
     if grab_commands is None:
         return (
             False,
@@ -197,15 +204,14 @@ async def custom_command_remove(
 
     if command in command_list:
         # Grabs the info for the command to be deleted
-        command_delete = db.cursor.execute(
-            "SELECT command, output, image FROM custom_commands WHERE guild_id = %s AND command = %s",
-            (ctx.guild.id, command),
+        command_delete = await db.db.fetchrow(
+            "SELECT command, output, image FROM custom_commands WHERE guild_id = $1 AND command = $2",
+            ctx.guild.id,
+            command,
         )
 
-        command_delete = db.cursor.fetchone()
-
         # Deletes
-        db.remove_command(command)
+        await db.remove_command(command)
 
         return (
             True,
@@ -232,10 +238,10 @@ async def custom_command_handling(ctx: discord.ext.commands.Context, command: st
         command (str): The command that was called
     """
 
-    db = Guild_Info(ctx.guild.id)
+    db = await Guild_Info(ctx.guild.id)
 
     # List of commands
-    command_list = db.grab_commands()
+    command_list = await db.grab_commands()
 
     if command_list is None:
         return
