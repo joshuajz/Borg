@@ -27,10 +27,8 @@ class Slash_Roles(commands.Cog):
     async def _roles_role(self, ctx, role):
         """/roles role"""
         result = await role_toggle(ctx, role.lower())
-
-        if result[0] == False:
-            await ctx.send(result[1], hiddne=True)
-        else:
+        print(result)
+        if result is not True:
             await ctx.send(embed=result[1], hidden=True)
 
     @cog_ext.cog_subcommand(
@@ -80,7 +78,8 @@ class Slash_Roles(commands.Cog):
 
         name = name.lower()
 
-        await add_role(ctx, name, role.id)
+        result = await add_role(ctx, name, role.id)
+        await ctx.send(embed=result[1], hidden=True)
 
     @cog_ext.cog_subcommand(
         base="roles",
@@ -106,16 +105,24 @@ class Slash_Roles(commands.Cog):
         if role_name is not None:
             if role_name[0] == "!":
                 role_name = role[1::]
-                actual_role = Guild_Info(ctx.guild.id).grab_role(command=role_name)
-                if actual_role is None:
-                    embed = create_embed_template(
-                        "You did not provide a proper role command.",
-                        "Check all of the role commands with !roles.",
-                        "error",
-                    )
-                    await ctx.send(embed=embed, hidden=True)
+            actual_role = await (await Guild_Info(ctx.guild.id)).grab_role(
+                command=role_name
+            )
+            actual_role = actual_role["role_id"]
+
+            if actual_role is None:
+                embed = create_embed_template(
+                    "You did not provide a proper role command.",
+                    "Check all of the role commands with !roles.",
+                    "error",
+                )
+                await ctx.send(embed=embed, hidden=True)
+            else:
+                result = await remove_role(ctx, actual_role)
+                await ctx.send(embed=result[1], hidden=True)
         elif role is not None:
-            await remove_role(ctx, role.id)
+            result = await remove_role(ctx, role.id)
+            await ctx.send(embed=result[1], hidden=True)
         else:
             await ctx.send(
                 embed=create_embed_template(

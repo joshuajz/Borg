@@ -17,7 +17,7 @@ class Classic_Roles(commands.Cog):
         result = await roles(ctx, self.bot)
 
         if result != True:
-            await ctx.send(result[1])
+            await ctx.send(embed=result[1])
 
     @commands.command(name="role")
     async def _role(self, ctx, role: str):

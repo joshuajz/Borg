@@ -1,6 +1,6 @@
 import discord
 from methods.database import Guild_Info
-from methods.embed import create_embed, add_field
+from methods.embed import create_embed, add_field, create_embed_template
 from methods.paged_command import page_command
 from typing import Tuple
 
@@ -21,13 +21,18 @@ async def role_toggle(
     # Grab the user's roles
     user_roles = [i.id for i in ctx.author.roles]
 
-    db = Guild_Info(ctx.guild.id)
+    db = await Guild_Info(ctx.guild.id)
 
     # Grab this server's role commands
-    role_id = db.grab_role(command=role)
+    role_id = await db.grab_role(command=role)
 
     if role_id is None:
-        return (False, "Invalid Roles.  Use !roles to see all of the roles.")
+        return (
+            False,
+            create_embed_template(
+                "Invalid Role", "Use !roles to see all of the roles.", "error"
+            ),
+        )
 
     role_id = role_id[1]
 
@@ -77,23 +82,31 @@ async def roles(
         Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
     """
 
-    db = Guild_Info(ctx.guild.id)
+    db = await Guild_Info(ctx.guild.id)
 
     try:
         all_roles = [
             f"!role {i[1]} - {ctx.guild.get_role(i[0]).mention}"
-            for i in db.grab_roles()
+            for i in await db.grab_roles()
         ]
     except:
         return (
             False,
-            "This server has no roles.  Have an administrator run /roles create.",
+            create_embed_template(
+                "No Roles",
+                "This server has no roles.  Have an administrator run /roles create.",
+                "error",
+            ),
         )
 
     if len(all_roles) == 0:
         return (
             False,
-            "This server has no roles.  Have an administrator run /roles create.",
+            create_embed_template(
+                "No Roles",
+                "This server has no roles.  Have an administrator run /roles create.",
+                "error",
+            ),
         )
 
     await page_command(ctx, bot, all_roles, "Roles")
@@ -110,14 +123,18 @@ async def add_role(ctx: discord.ext.commands.Context, name: str, role_id: int):
     """
 
     if ctx.author.guild_permissions.administrator != True:
-        await ctx.send(
-            "You do not have permission to add a role.  Ask an administrator.",
-            hidden=True,
+        return (
+            False,
+            create_embed_template(
+                "No Permission",
+                "You do not have permission to add a role.  Contact an administrator.",
+                "error",
+            ),
         )
 
-    db = Guild_Info(ctx.guild.id)
+    db = await Guild_Info(ctx.guild.id)
 
-    if db.check_role(role_id, name):
+    if await db.check_role(role_id, name):
         for role in ctx.guild.roles:
             if role.name == "Borg" or role.name == "Borg Test":
                 borg_role = {"id": role.id, "position": role.position}
@@ -125,21 +142,31 @@ async def add_role(ctx: discord.ext.commands.Context, name: str, role_id: int):
         actual_role = ctx.guild.get_role(role_id)
 
         if borg_role["position"] > actual_role.position:
-            db.add_role(role_id, name)
+            await db.add_role(role_id, name)
 
             embed = create_embed("Role Added", "", "light_green")
             add_field(embed, "Role", actual_role.mention, True)
             add_field(embed, "Command", f"!role {name}", True)
+            return (True, embed)
 
-            await ctx.send(embed=embed, hidden=True)
         else:
-            await ctx.send(
-                "The bot does not have permission to give that role to users.  Ensure the bot's role (@Borg) is **ABOVE** the role in the 'Roles' part of your server's dashboard.",
-                hidden=True,
+            return (
+                False,
+                create_embed_template(
+                    "Bot Doesn't have Permission.",
+                    "The bot does not have permission to give that role to users.  Ensure the bot's role (@Borg) is **ABOVE** the role in the 'Roles' part of your server's dashboard.",
+                    "error",
+                ),
             )
+
     else:
-        await ctx.send(
-            "There is already a command associated with **either** that role or command name.  Check with !roles."
+        return (
+            False,
+            create_embed_template(
+                "Already Created",
+                "There is already a command associated with **either** that role or command name.  Check with !roles.",
+                "error",
+            ),
         )
 
 
@@ -152,27 +179,36 @@ async def remove_role(ctx, role_id: int):
     """
 
     if ctx.author.guild_permissions.administrator != True:
-        await ctx.send(
-            "You do not have permission to remove a role.  Ask an administrator.",
-            hidden=True,
+        return (
+            False,
+            create_embed_template(
+                "No Permission.",
+                "You do not have permission to remove a role.  Ask an administrator.",
+                "error",
+            ),
         )
 
-    db = Guild_Info(ctx.guild.id)
+    db = await Guild_Info(ctx.guild.id)
 
-    removal_role = db.grab_role(role_id=role_id)
+    removal_role = await db.grab_role(role_id=role_id)
 
     if removal_role is None:
-        await ctx.channel.send(
-            "There is no command associated with that role in this server.", hidden=True
+        return (
+            False,
+            create_embed_template(
+                "No Command.",
+                "There is no command associated with that role in this server.",
+                "error",
+            ),
         )
-        return
 
-    db.remove_role(role_id)
+    await db.remove_role(role_id)
 
     embed = create_embed("Role Removed", "", "dark_blue")
-    add_field(
-        embed, "Role", f"{ctx.guild.get_role(int(removal_role[1])).mention}", True
-    )
-    add_field(embed, "Command", f"!role {removal_role[2]}", True)
 
-    await ctx.channel.send(embed=embed, hidden=True)
+    add_field(
+        embed, "Role", f"{ctx.guild.get_role(removal_role['role_id']).mention}", True
+    )
+    add_field(embed, "Command", f"!role {removal_role['command']}", True)
+
+    return [True, embed]

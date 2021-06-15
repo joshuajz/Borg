@@ -285,30 +285,25 @@ class Guild_Info:
                 )
         """
         if command:
-            command_response = await self.db.fetchone(
+            command_response = await self.db.fetchrow(
                 "SELECT * FROM command_roles WHERE guild_id = $1 AND command = $2",
                 self.guild_id,
                 command,
             )
 
-            try:
-                return command_response
-            except:
-                return None
+            return command_response
 
         elif role_id:
-            command_response = await self.db.fetchone(
+
+            command_response = await self.db.fetchrow(
                 "SELECT * FROM command_roles WHERE guild_id = $1 AND role_id = $2",
                 self.guild_id,
                 role_id,
             )
 
-            try:
-                return command_response
-            except:
-                return None
+            return command_response
 
-    async def check_role(self, role_id, command) -> bool:
+    async def check_role(self, role_id: int, command: str) -> bool:
         """Checks to see if a role exists when adding a new role to the database.
 
         Args:
@@ -319,16 +314,14 @@ class Guild_Info:
             bool or None: Will return True if these values exist in the database, otherwise will return False.
         """
 
-        role_response = await self.db.fetchone(
-            "SELECT EXISTS(SELECT * FROM command_roles WHERE guild_id = $1 AND (role_id = $1 OR command = $1))",
+        role_response = await self.db.fetchrow(
+            "SELECT EXISTS(SELECT * FROM command_roles WHERE guild_id = $1 AND (role_id = $2 OR command = $3))",
             self.guild_id,
             role_id,
             command,
         )
-        try:
-            return role_response
-        except:
-            return False
+
+        return not (role_response["exists"])
 
     async def add_role(self, role_id, command):
         """Adds a role to the database
