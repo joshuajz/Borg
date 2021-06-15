@@ -370,6 +370,13 @@ class Commands_DB:
             except Exception as e:
                 print(e)
 
+    async def fetch_command(self, command):
+        return await self.db.fetchrow(
+            "SELECT command, output, image FROM custom_commands WHERE guild_id = $1 AND command = $2",
+            self.guild_id,
+            command,
+        )
+
 
 @asyncinit
 class Guild_Info:

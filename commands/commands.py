@@ -1,6 +1,6 @@
 import discord
 from urlextract import URLExtract
-from methods.database import Guild_Info
+from methods.database import Commands_DB
 from typing import Tuple
 from methods.embed import create_embed, create_embed_template
 from methods.paged_command import page_command
@@ -21,7 +21,7 @@ async def custom_command_list(
     """
 
     # Database
-    db = await Guild_Info(ctx.guild.id)
+    db = await Commands_DB(ctx.guild.id)
 
     # List of commands
     grab_commands = await db.grab_commands()
@@ -126,7 +126,7 @@ async def custom_command_add(
     else:
         urls = None
 
-    db = await Guild_Info(ctx.guild.id)
+    db = await Commands_DB(ctx.guild.id)
 
     # Find all of the current commands
     grab_commands = await db.grab_commands()
@@ -182,7 +182,7 @@ async def custom_command_remove(
             ),
         )
 
-    db = await Guild_Info(ctx.guild.id)
+    db = await Commands_DB(ctx.guild.id)
 
     # Removes the ! from the command -> !hello turns into hello
     if command[0] == "!":
@@ -204,11 +204,7 @@ async def custom_command_remove(
 
     if command in command_list:
         # Grabs the info for the command to be deleted
-        command_delete = await db.db.fetchrow(
-            "SELECT command, output, image FROM custom_commands WHERE guild_id = $1 AND command = $2",
-            ctx.guild.id,
-            command,
-        )
+        command_delete = await db.fetch_command(command)
 
         # Deletes
         await db.remove_command(command)
@@ -238,7 +234,7 @@ async def custom_command_handling(ctx: discord.ext.commands.Context, command: st
         command (str): The command that was called
     """
 
-    db = await Guild_Info(ctx.guild.id)
+    db = await Commands_DB(ctx.guild.id)
 
     # List of commands
     command_list = await db.grab_commands()
