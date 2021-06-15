@@ -147,8 +147,7 @@ class Guild_Info:
             "SELECT * FROM settings WHERE guild_id = $1", self.guild_id
         )
 
-        if len(grab_info) == 1:
-            grab_info = grab_info.values()
+        if grab_info:
             settings = {
                 "programs_channel": grab_info[1],
                 "course_default_school": grab_info[2],
@@ -321,8 +320,10 @@ class Guild_Info:
         """
 
         role_response = await self.db.fetchone(
-            "SELECT EXISTS(SELECT * FROM command_roles WHERE guild_id = %s AND (role_id = %s OR command = %s))",
-            (self.guild_id, role_id, command),
+            "SELECT EXISTS(SELECT * FROM command_roles WHERE guild_id = $1 AND (role_id = $1 OR command = $1))",
+            self.guild_id,
+            role_id,
+            command,
         )
         try:
             return role_response
@@ -367,7 +368,7 @@ class Guild_Info:
             except Exception as e:
                 print(e)
 
-    def grab_programs(self, user_id: int) -> str:
+    async def grab_programs(self, user_id: int) -> str:
         """Grabs all of a user's programs
 
         Args:
@@ -377,13 +378,14 @@ class Guild_Info:
             str or None: None if the user has no programs.  A string containing all of the programs.  \n Seperated
         """
 
-        programs_response = self.cursor.fetchrow(
-            "SELECT description FROM programs WHERE guild_id = %s AND user_id = %s",
-            (self.guild_id, user_id),
+        programs_response = await self.db.fetchrow(
+            "SELECT description FROM programs WHERE guild_id = $1 AND user_id = $2",
+            self.guild_id,
+            user_id,
         )
 
         try:
-            return programs_response
+            return programs_response[0]
         except:
             return None
 

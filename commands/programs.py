@@ -23,10 +23,11 @@ async def programs_add(
         Tuple(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
     """
 
-    db = Guild_Info(ctx.guild.id)
+    db = await Guild_Info(ctx.guild.id)
 
     # Channel for verification
-    settings = db.grab_settings()
+    settings = await db.grab_settings()
+
     if settings is None or settings["programs_channel"] is None:
         return (
             False,
@@ -104,13 +105,14 @@ async def programs_remove(
     else:
         user_id = ctx.author.id
 
-    db = Guild_Info(ctx.guild.id)
+    db = await Guild_Info(ctx.guild.id)
 
     # Deletes ALL the programs
     if programs.lower() in ["*", "all"]:
-        db.cursor.execute(
-            "DELETE FROM programs WHERE guild_id = %s AND user_id = %s",
-            (ctx.guild.id, user_id),
+        await db.db.execute(
+            "DELETE FROM programs WHERE guild_id = $1 AND user_id = $2",
+            ctx.guild.id,
+            user_id,
         )
 
         return (
@@ -140,7 +142,7 @@ async def programs_remove(
     # All programs
     all_programs = {}
     i = 1
-    for program in db.grab_programs(user_id).split("\n"):
+    for program in (await db.grab_programs(user_id)).split("\n"):
         all_programs[i] = program
         i += 1
 
@@ -150,9 +152,10 @@ async def programs_remove(
     ]
 
     if len(new_programs) == 0:
-        db.cursor(
-            "DELETE FROM programs WHERE guild_id = %s AND user_id = %s",
-            (ctx.guild.id, user_id),
+        await db.db.execute(
+            "DELETE FROM programs WHERE guild_id = $1 AND user_id = $2",
+            ctx.guild.id,
+            user_id,
         )
 
         return (
@@ -170,9 +173,11 @@ async def programs_remove(
     for program in range(len_programs):
         message += new_programs[program] + ("\n" if program != len_programs - 1 else "")
 
-    db.cursor.execute(
-        "UPDATE programs SET description = %s WHERE guild_id = %s AND user_id = %s",
-        (message, ctx.guild.id, user_id),
+    await db.db.execute(
+        "UPDATE programs SET description = $1 WHERE guild_id = $2 AND user_id = $3",
+        message,
+        ctx.guild.id,
+        user_id,
     )
 
     return (
@@ -237,10 +242,10 @@ async def programs_edit(
 
     user = parse_id(user)
 
-    db = Guild_Info(ctx.guild.id)
+    db = await Guild_Info(ctx.guild.id)
 
     # Channel for verification
-    settings = db.grab_settings()
+    settings = await db.grab_settings()
     if settings is None or settings["programs_channel"] is None:
         return (
             False,
@@ -253,7 +258,7 @@ async def programs_edit(
 
     programs_channel = settings["programs_channel"]
 
-    programs = db.grab_programs(user).split("\n")
+    programs = (await db.grab_programs(user)).split("\n")
 
     # Entire programs list
     p = {}
@@ -316,10 +321,10 @@ async def programs(ctx, bot, user: str) -> Tuple[bool, discord.Embed]:
     # Gets the user's id
     user = parse_id(user)
 
-    db = Guild_Info(ctx.guild.id)
+    db = await Guild_Info(ctx.guild.id)
 
     # Grabs all of the programs
-    programs_list = db.grab_programs(user)
+    programs_list = await db.grab_programs(user)
 
     # Empty list
     if programs_list is None:
@@ -373,10 +378,11 @@ async def programs_setup(
     if not channel:
         return [False, "Invalid channel."]
 
-    db = Guild_Info(ctx.guild.id)
-    db.cursor.execute(
-        "UPDATE settings SET programs_channel = %s WHERE guild_id = %s",
-        (channel, ctx.guild.id),
+    db = await Guild_Info(ctx.guild.id)
+    await db.db.execute(
+        "UPDATE settings SET programs_channel = $1 WHERE guild_id = $2",
+        channel,
+        ctx.guild.id,
     )
 
     return (
@@ -400,10 +406,10 @@ async def programs_reaction_handling(
         bool: If it was a programs related reaction
     """
 
-    db = Guild_Info(ctx.guild_id)
+    db = await Guild_Info(ctx.guild_id)
 
     # Grabs the verification channel
-    settings = db.grab_settings()
+    settings = await db.grab_settings()
     if settings is None or settings["programs_channel"] is None:
         return False
 
@@ -441,11 +447,12 @@ async def programs_reaction_handling(
             # Checks to see if the user already has a programs list
 
             # If they don't
-            db.cursor.execute(
-                "SELECT COUNT(user_id) FROM programs WHERE guild_id = %s AND user_id = %s",
-                (ctx.guild_id, user_id),
+            count = await db.db.fetchrow(
+                "SELECT COUNT(user_id) FROM programs WHERE guild_id = $1 AND user_id = $2",
+                ctx.guild_id,
+                user_id,
             )
-            count = db.cursor.fetchone()[0]
+
             if count != 1:
                 # Delete the message
                 programs = embeds.fields[1].value
@@ -455,9 +462,11 @@ async def programs_reaction_handling(
                     return False
 
                 # Add the programs
-                db.cursor.execute(
-                    "INSERT INTO programs VALUES (%s, %s, %s)",
-                    (ctx.guild_id, user_id, programs),
+                await db.db.execute(
+                    "INSERT INTO programs VALUES ($1, $2, $3)",
+                    ctx.guild_id,
+                    user_id,
+                    programs,
                 )
 
             # If they do
@@ -470,8 +479,8 @@ async def programs_reaction_handling(
                     return False
 
                 # Grabs the current programs
-                current_programs = db.grab_programs(user_id)
-                print(current_programs)
+                current_programs = await db.grab_programs(user_id)
+
                 current_programs += "\n"
 
                 # Adds the additions
@@ -483,9 +492,11 @@ async def programs_reaction_handling(
                     )
 
                 # Updates the database to the newer longer version
-                db.cursor.execute(
-                    "UPDATE programs SET description = %s WHERE guild_id = %s AND user_id = %s",
-                    (current_programs, ctx.guild_id, user_id),
+                await db.cursor.execute(
+                    "UPDATE programs SET description = $1 WHERE guild_id = $2 AND user_id = $3",
+                    current_programs,
+                    ctx.guild_id,
+                    user_id,
                 )
 
                 # Grabs the user & makes a DM channel
@@ -532,7 +543,7 @@ async def programs_reaction_handling(
                 return True
 
             # Grabs current programs
-            current_programs = db.grab_programs(user_id)
+            current_programs = await db.grab_programs(user_id)
 
             # All programs into a dictionary
             programs = {}
@@ -553,9 +564,11 @@ async def programs_reaction_handling(
                 final_programs += p_values[i] + ("\n" if i + 1 != len_p_values else "")
 
             # Update in the databse
-            db.cursor.execute(
-                "UPDATE programs SET description = %s WHERE guild_id = %s AND user_id = %s",
-                (final_programs, ctx.guild_id, user_id),
+            await db.db.execute(
+                "UPDATE programs SET description = $1 WHERE guild_id = $2 AND user_id = $3",
+                final_programs,
+                ctx.guild_id,
+                user_id,
             )
 
             # Open a DM

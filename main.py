@@ -43,6 +43,7 @@ async def on_ready():
     guilds_on = [guild.id for guild in bot.guilds]
     database = await Guild_Info(0)
     guilds_db = await database.db.fetch("SELECT guild_id FROM settings")
+    guilds_db = [i[0] for i in guilds_db]
     if guilds_db is not None:
         for guild in guilds_on:
             if guild not in guilds_db:
@@ -56,7 +57,8 @@ async def on_message(message: discord.Message):
     """When a message is sent."""
 
     if (
-        message.content != None
+        message
+        and message.content != None
         and message.author != None
         and message.author.name != None
     ):
