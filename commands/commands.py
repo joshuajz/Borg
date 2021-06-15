@@ -146,7 +146,7 @@ async def custom_command_add(
             )
 
     # Add it to the database
-    db.add_command(name, description, image)
+    await db.add_command(name, description, image)
 
     return (
         True,

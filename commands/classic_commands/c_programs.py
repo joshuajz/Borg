@@ -26,7 +26,7 @@ class Classic_Programs(commands.Cog):
         if len(content) == 1:
             embed = create_embed(
                 "Command: !programs",
-                "**Description**: Allows you to interact with programs commands.\n**Sub Commands**:\n!programs {user} - Allows you to see a user's programs. (ex: !programs <@749359897405161522>)\n!programs add - Allows you to add programs to your list.\n!programs remove - Allows you to remove programs from your list.\n!programs edit - Allows you to edit one of your programs.",
+                "**Description**: Allows you to interact with programs commands.\n**Sub Commands**:\n!programs {user} - Allows you to see a user's programs. (ex: !programs <@749359897405161522>)\n!programs add - Allows you to add programs to your list.\n!programs remove - Allows you to remove programs from your list.\n!programs edit - Allows you to edit one of your programs.\n!commands setup - Allows an admin to setup a programs confirmation channel.",
                 "orange",
             )
             await ctx.send(embed=embed)

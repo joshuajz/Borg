@@ -151,6 +151,28 @@ class Programs_DB:
         except:
             return None
 
+    async def update_programs(self, user_id, new_programs):
+        await self.db.execute(
+            "UPDATE programs SET description = $1 WHERE guild_id = $2 AND user_id = $3",
+            new_programs,
+            self.guild_id,
+            user_id,
+        )
+
+    async def check_programs_exists(self, user_id):
+        count = await self.db.fetchrow(
+            "SELECT COUNT(user_id) FROM programs WHERE guild_id = $1 AND user_id = $2",
+            self.guild_id,
+            user_id,
+        )
+
+        return count[0]
+
+    async def add_programs(self, user_id, programs):
+        await self.db.execute(
+            "INSERT INTO programs VALUES ($1, $2, $3)", self.guild_id, user_id, programs
+        )
+
 
 @asyncinit
 class Roles_DB:
@@ -286,16 +308,6 @@ class Courses_DB:
 
 
 @asyncinit
-class Guild_DB:
-    async def __init__(self, guild_id: int):
-        """Initalizes self.guild_id & a database connection."""
-        self.guild_id = guild_id
-
-        # Grab a database connection
-        self.db = await database_connection()
-
-
-@asyncinit
 class Commands_DB:
     async def __init__(self, guild_id: int):
         """Initalizes self.guild_id & a database connection."""
@@ -377,9 +389,24 @@ class Commands_DB:
             command,
         )
 
+    async def delete_all_programs(self, user_id):
+        await self.db.execute(
+            "DELETE FROM programs WHERE guild_id = $1 AND user_id = $2",
+            self.guild_id,
+            user_id,
+        )
+
+    async def update_programs(self, user_id, message):
+        await self.db.execute(
+            "UPDATE programs SET description = $1 WHERE guild_id = $2 AND user_id = $3",
+            message,
+            self.guild_id,
+            user_id,
+        )
+
 
 @asyncinit
-class Guild_Info:
+class Guild_DB:
     """The Guild_Info class.  Provides all of the functions required for dealing with the Borg database."""
 
     async def __init__(self, guild_id: int):
@@ -412,6 +439,14 @@ class Guild_Info:
             return settings
         else:
             return None
+
+    async def update_settings(self, setting, newvalue):
+        await self.db.execute(
+            "UPDATE settings SET $1 = $2 WHERE guild_id = $3",
+            setting,
+            newvalue,
+            self.guild_id,
+        )
 
     async def grab_welcome(self) -> dict:
         """Fetches a server's welcome settings.

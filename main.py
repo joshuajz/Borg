@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from discord.ext import commands
 from discord_slash import SlashCommand
-from methods.database import create_database, Guild_Info
+from methods.database import create_database, Guild_DB
 from commands.commands import custom_command_handling
 from commands.programs import programs_reaction_handling
 from commands.welcome import welcome_handling
@@ -41,13 +41,13 @@ async def on_ready():
 
     # Default Settings Check
     guilds_on = [guild.id for guild in bot.guilds]
-    database = await Guild_Info(0)
+    database = await Guild_DB(0)
     guilds_db = await database.db.fetch("SELECT guild_id FROM settings")
     guilds_db = [i[0] for i in guilds_db]
     if guilds_db is not None:
         for guild in guilds_on:
             if guild not in guilds_db:
-                await (await Guild_Info(guild)).create_default_settings()
+                await (await Guild_DB(guild)).create_default_settings()
 
     print(f"Logged in as {bot.user}.")
 
@@ -107,7 +107,7 @@ async def on_member_join(member: discord.Member):
 async def on_guild_join(guild: discord.Guild):
     """When the bot joins a guild."""
 
-    Guild_Info(guild.guild.id).create_default_settings()
+    await (await Guild_DB(guild.guild.id)).create_default_settings()
 
 
 # Load the various commands
