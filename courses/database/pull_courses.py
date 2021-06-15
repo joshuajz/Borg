@@ -5,11 +5,11 @@ from courses.database.waterloo import pull_values as p_uw
 
 async def pull_courses():
     print()
-    # print("Pulling Queens Courses.")
-    # await p_queens()
+    print("Pulling Queens Courses.")
+    await p_queens()
 
-    # print("Pulling UofT Courses")
-    # await p_uoft()
+    print("Pulling UofT Courses")
+    await p_uoft()
 
-    # print("Pulling Waterloo Courses.")
-    # await p_uw()
+    print("Pulling Waterloo Courses.")
+    await p_uw()
