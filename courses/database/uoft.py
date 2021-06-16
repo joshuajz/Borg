@@ -1,12 +1,12 @@
 import json
 import requests
 import re
-from methods.database import database_connection
+from methods.database import Courses_DB
 
 base = "https://nikel.ml/api/courses"
 
 
-def get_info(offset=0):
+async def get_info(offset=0):
     parameters = {"limit": 100, "offset": offset}
 
     response = requests.get(base, params=parameters)
@@ -18,13 +18,13 @@ def get_info(offset=0):
 
 
 async def pull_values():
-    db, cursor = await database_connection()
+    db = await Courses_DB("uoft")
 
     offset = 0
     while True:
-        info = get_info(offset)
+        info = await get_info(offset)
         if info != False and len(info) != 0:
-            await place_info(info, db, cursor)
+            await place_info(info, db)
             offset += 100
         else:
             break
@@ -32,7 +32,7 @@ async def pull_values():
     print("Finished UofT Courses.")
 
 
-async def place_info(courses: list, db, cursor):
+async def place_info(courses: list, db):
     """
     H1 - UTSG half year
     Y1 - UTSG full year
@@ -64,8 +64,7 @@ async def place_info(courses: list, db, cursor):
             campus = "UTM"
         return academic_units, campus
 
-    cursor.execute("SELECT code FROM courses WHERE school = 'uoft'")
-    in_database = [i[0] for i in cursor.fetchall()]
+    in_database = await db.fetch_courses()
 
     for course in courses:
         code = course["code"]
@@ -102,17 +101,13 @@ async def place_info(courses: list, db, cursor):
                 f"**Recommended Preparation**: {course['recommended_preparation']}\n"
             )
 
-        cursor.execute(
-            "INSERT INTO courses(school, code, number, department, name, description, requirements, units, campus) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            (
-                "uoft",
-                course_info[0],
-                int(course_info[1]),
-                course_info[2],
-                course["name"],
-                course["description"],
-                requirements,
-                academic_units,
-                campus,
-            ),
+        await db.add_course(
+            course_info[0],
+            int(course_info[1]),
+            course_info[2],
+            course["name"],
+            course["description"],
+            requirements=requirements,
+            academic_units=academic_units,
+            campus=campus,
         )

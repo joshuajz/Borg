@@ -299,12 +299,46 @@ class Roles_DB:
 
 @asyncinit
 class Courses_DB:
-    async def __init__(self, guild_id: int):
+    async def __init__(self, school):
         """Initalizes self.guild_id & a database connection."""
-        self.guild_id = guild_id
+        self.school = school
 
         # Grab a database connection
         self.db = await database_connection()
+
+    async def fetch_courses(self):
+        raw = await self.db.fetch(
+            "SELECT code FROM courses WHERE school = $1", self.school
+        )
+        codes = [i[0] for i in raw]
+
+        return codes
+
+    async def add_course(
+        self,
+        code,
+        number,
+        department,
+        name,
+        description,
+        requirements=None,
+        academic_level=None,
+        units=None,
+        campus=None,
+    ):
+        await self.db.execute(
+            "INSERT INTO courses VALUES ($1, $2, $3, $4, $5, $6, $7, %8, $9, $10)",
+            self.school,
+            code,
+            number,
+            department,
+            name,
+            description,
+            requirements,
+            academic_level,
+            units,
+            campus,
+        )
 
 
 @asyncinit

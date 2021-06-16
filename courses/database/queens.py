@@ -1,12 +1,12 @@
 import json
 import requests
-from methods.database import database_connection
+from methods.database import Courses_DB
 
 
 base = "https://api.qmulus.io/v1/courses/"
 
 
-def get_info(offset=0):
+async def get_info(offset=0):
     parameters = {
         "limit": "100",
         "offset": str(offset),
@@ -21,16 +21,15 @@ def get_info(offset=0):
 
 
 async def pull_values():
-    db, cursor = await database_connection()
+    db = await Courses_DB("queens")
 
-    cursor.execute("SELECT code FROM courses WHERE school = 'queens'")
-    courses = [i[0] for i in cursor.fetchall()]
+    courses = await db.fetch_courses()
 
     offset = 0
     while True:
-        info = get_info(offset)
+        info = await get_info(offset)
         if info != False and len(info) != 0:
-            await place_info(info, courses, db, cursor)
+            await place_info(info, courses, db)
             offset += 100
         else:
             break
@@ -38,7 +37,7 @@ async def pull_values():
     print("Finished Queens Courses.")
 
 
-async def place_info(items: list, in_database, db, cursor):
+async def place_info(items: list, in_database, db):
     for item in items:
         course_id = item["id"]
         course_code = item["course_code"]
@@ -64,17 +63,13 @@ async def place_info(items: list, in_database, db, cursor):
         if course_id in in_database:
             continue
 
-        cursor.execute(
-            "INSERT INTO courses(school, code, number, department, name, description, requirements, academic_level, units) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            (
-                "queens",
-                course_id,
-                int(course_code),
-                item["department"],
-                item["course_name"],
-                item["description"],
-                requirements,
-                item["academic_level"],
-                item["units"],
-            ),
+        await db.add_course(
+            course_id,
+            int(course_code),
+            item["department"],
+            item["course_name"],
+            item["description"],
+            requirements=requirements,
+            academic_level=item["academic_level"],
+            units=item["units"],
         )
