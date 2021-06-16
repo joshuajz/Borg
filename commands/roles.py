@@ -1,5 +1,5 @@
 import discord
-from methods.database import Guild_Info
+from methods.database import Roles_DB
 from methods.embed import create_embed, add_field, create_embed_template
 from methods.paged_command import page_command
 from typing import Tuple
@@ -21,7 +21,7 @@ async def role_toggle(
     # Grab the user's roles
     user_roles = [i.id for i in ctx.author.roles]
 
-    db = await Guild_Info(ctx.guild.id)
+    db = await Roles_DB(ctx.guild.id)
 
     # Grab this server's role commands
     role_id = await db.grab_role(command=role)
@@ -45,7 +45,11 @@ async def role_toggle(
         except:
             return (
                 False,
-                "Borg doesn't have permission to add/remove that role.  Ensure Borg's role is **above** the role you're trying to toggle in the server settings (Contact an administrator).",
+                create_embed_template(
+                    "No Permission.",
+                    "Borg doesn't have permission to add/remove that role.  Ensure Borg's role is **above** the role you're trying to toggle in the server settings (Contact an administrator)",
+                    "error",
+                ),
             )
 
         embed = create_embed(
@@ -60,7 +64,11 @@ async def role_toggle(
         except:
             return (
                 False,
-                "Borg doesn't have permission to add/remove that role.  Ensure Borg's role is **above** the role you're trying to toggle in the server settings (Contact an administrator).",
+                create_embed_template(
+                    "No Permission.",
+                    "Borg doesn't have permission to add/remove that role.  Ensure Borg's role is **above** the role you're trying to toggle in the server settings (Contact an administrator).",
+                    "error",
+                ),
             )
 
         embed = create_embed(
@@ -82,7 +90,7 @@ async def roles(
         Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
     """
 
-    db = await Guild_Info(ctx.guild.id)
+    db = await Roles_DB(ctx.guild.id)
 
     try:
         all_roles = [
@@ -132,7 +140,7 @@ async def add_role(ctx: discord.ext.commands.Context, name: str, role_id: int):
             ),
         )
 
-    db = await Guild_Info(ctx.guild.id)
+    db = await Roles_DB(ctx.guild.id)
 
     if await db.check_role(role_id, name):
         for role in ctx.guild.roles:
@@ -188,7 +196,7 @@ async def remove_role(ctx, role_id: int):
             ),
         )
 
-    db = await Guild_Info(ctx.guild.id)
+    db = await Roles_DB(ctx.guild.id)
 
     removal_role = await db.grab_role(role_id=role_id)
 

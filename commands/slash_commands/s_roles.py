@@ -4,7 +4,7 @@ from discord_slash import cog_ext, SlashContext
 from discord_slash.utils.manage_commands import create_option
 from commands.roles import role_toggle, roles, add_role, remove_role
 from methods.embed import create_embed_template
-from methods.database import Guild_Info
+from methods.database import Roles_DB
 
 
 class Slash_Roles(commands.Cog):
@@ -105,7 +105,7 @@ class Slash_Roles(commands.Cog):
         if role_name is not None:
             if role_name[0] == "!":
                 role_name = role[1::]
-            actual_role = await (await Guild_Info(ctx.guild.id)).grab_role(
+            actual_role = await (await Roles_DB(ctx.guild.id)).grab_role(
                 command=role_name
             )
             actual_role = actual_role["role_id"]

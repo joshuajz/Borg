@@ -1,23 +1,25 @@
 import json
 import requests
 import os
-from dotenv import load_dotenv
-from methods.database import database_connection
+from dotenv import dotenv_values
+from methods.database import Courses_DB
 
 cwd = os.getcwd().split("/")
+
 while cwd[-1] != "Borg":
     try:
         os.chdir("..")
+        print(os.getcwd())
     except:
         print(
             "Error moving directories.  Make sure you haven't renamed the folder that Borg resides in."
         )
 
-load_dotenv()
-api_key = os.environ.get("waterloo_api")
+cfg = dotenv_values(".env")
+api_key = cfg["waterloo_api"]
 
 
-def get_term():
+async def get_term():
     url = "https://openapi.data.uwaterloo.ca/v3/Terms/current"
     header = {"x-api-key": api_key}
 
@@ -29,7 +31,8 @@ def get_term():
         return False
 
 
-def get_courses(term=get_term()):
+async def get_courses():
+    term = await get_term()
     url = f"https://openapi.data.uwaterloo.ca/v3/Courses/{term}"
     header = {"x-api-key": api_key}
 
@@ -42,7 +45,7 @@ def get_courses(term=get_term()):
 
 
 # Get more detailed information -> not used right now.
-def get_course(course, term=get_term()):
+async def get_course(course, term=get_term()):
     url = f"https://openapi.data.uwaterloo.ca/v3/Courses/{term}/{course}"
     header = {"x-api-key": api_key}
 
@@ -54,8 +57,9 @@ def get_course(course, term=get_term()):
         return False
 
 
-async def pull_values(courses=get_courses()):
-    db, cursor = await database_connection()
+async def pull_values():
+    courses = await get_courses()
+    db = await Courses_DB("waterloo")
 
     def pull_numbers(string):
         final = ""
@@ -64,8 +68,7 @@ async def pull_values(courses=get_courses()):
                 final += s
         return final
 
-    cursor.execute("SELECT code FROM courses WHERE school = 'waterloo'")
-    in_database = [i[0] for i in cursor.fetchall()]
+    in_database = await db.fetch_courses()
 
     for course in courses:
         campus = None
@@ -93,18 +96,14 @@ async def pull_values(courses=get_courses()):
         if course_code in in_database:
             continue
 
-        cursor.execute(
-            "INSERT INTO courses(school, code, number, department, name, description, requirements, campus) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-            (
-                "waterloo",
-                course_code,
-                course_number,
-                course["subjectCode"],
-                course["title"],
-                course["description"],
-                course["requirementsDescription"],
-                campus,
-            ),
+        await db.add_course(
+            course_code,
+            course_number,
+            course["subjectCode"],
+            course["title"],
+            course["description"],
+            requirements=course["requirementsDescription"],
+            campus=campus,
         )
 
     print("Finished Waterloo Courses.")

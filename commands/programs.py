@@ -1,5 +1,5 @@
 import discord
-from methods.database import Guild_Info
+from methods.database import Programs_DB, Guild_DB
 from methods.embed import create_embed, add_field, create_embed_template
 from methods.data import parse_id
 from typing import Tuple
@@ -23,10 +23,11 @@ async def programs_add(
         Tuple(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
     """
 
-    db = await Guild_Info(ctx.guild.id)
+    db = await Programs_DB(ctx.guild.id)
+    db_guild = await Guild_DB(ctx.guild.id)
 
     # Channel for verification
-    settings = await db.grab_settings()
+    settings = await db_guild.grab_settings()
 
     if settings is None or settings["programs_channel"] is None:
         return (
@@ -105,15 +106,11 @@ async def programs_remove(
     else:
         user_id = ctx.author.id
 
-    db = await Guild_Info(ctx.guild.id)
+    db = await Programs_DB(ctx.guild.id)
 
     # Deletes ALL the programs
     if programs.lower() in ["*", "all"]:
-        await db.db.execute(
-            "DELETE FROM programs WHERE guild_id = $1 AND user_id = $2",
-            ctx.guild.id,
-            user_id,
-        )
+        await db.delete_all_programs(user_id)
 
         return (
             True,
@@ -152,11 +149,7 @@ async def programs_remove(
     ]
 
     if len(new_programs) == 0:
-        await db.db.execute(
-            "DELETE FROM programs WHERE guild_id = $1 AND user_id = $2",
-            ctx.guild.id,
-            user_id,
-        )
+        await db.delete_all_programs(user_id)
 
         return (
             True,
@@ -173,12 +166,7 @@ async def programs_remove(
     for program in range(len_programs):
         message += new_programs[program] + ("\n" if program != len_programs - 1 else "")
 
-    await db.db.execute(
-        "UPDATE programs SET description = $1 WHERE guild_id = $2 AND user_id = $3",
-        message,
-        ctx.guild.id,
-        user_id,
-    )
+    await db.update_programs(user_id, message)
 
     return (
         True,
@@ -242,10 +230,11 @@ async def programs_edit(
 
     user = parse_id(user)
 
-    db = await Guild_Info(ctx.guild.id)
+    db = await Programs_DB(ctx.guild.id)
+    db_guild = await Guild_DB(ctx.guild.id)
 
     # Channel for verification
-    settings = await db.grab_settings()
+    settings = await db_guild.grab_settings()
     if settings is None or settings["programs_channel"] is None:
         return (
             False,
@@ -321,7 +310,7 @@ async def programs(ctx, bot, user: str) -> Tuple[bool, discord.Embed]:
     # Gets the user's id
     user = parse_id(user)
 
-    db = await Guild_Info(ctx.guild.id)
+    db = await Programs_DB(ctx.guild.id)
 
     # Grabs all of the programs
     programs_list = await db.grab_programs(user)
@@ -378,12 +367,8 @@ async def programs_setup(
     if not channel:
         return [False, "Invalid channel."]
 
-    db = await Guild_Info(ctx.guild.id)
-    await db.db.execute(
-        "UPDATE settings SET programs_channel = $1 WHERE guild_id = $2",
-        channel,
-        ctx.guild.id,
-    )
+    db = await Guild_DB(ctx.guild.id)
+    await db.update_settings("programs_channel", channel)
 
     return (
         "True",
@@ -406,10 +391,11 @@ async def programs_reaction_handling(
         bool: If it was a programs related reaction
     """
 
-    db = await Guild_Info(ctx.guild_id)
+    db = await Programs_DB(ctx.guild_id)
+    db_guild = await Guild_DB(ctx.guild_id)
 
     # Grabs the verification channel
-    settings = await db.grab_settings()
+    settings = await db_guild.grab_settings()
     if settings is None or settings["programs_channel"] is None:
         return False
 
@@ -447,11 +433,7 @@ async def programs_reaction_handling(
             # Checks to see if the user already has a programs list
 
             # If they don't
-            count = await db.db.fetchrow(
-                "SELECT COUNT(user_id) FROM programs WHERE guild_id = $1 AND user_id = $2",
-                ctx.guild_id,
-                user_id,
-            )
+            count = await db.check_programs_exists(user_id)
 
             if count != 1:
                 # Delete the message
@@ -462,12 +444,7 @@ async def programs_reaction_handling(
                     return False
 
                 # Add the programs
-                await db.db.execute(
-                    "INSERT INTO programs VALUES ($1, $2, $3)",
-                    ctx.guild_id,
-                    user_id,
-                    programs,
-                )
+                await db.add_programs(user_id, programs)
 
             # If they do
             else:
@@ -492,12 +469,7 @@ async def programs_reaction_handling(
                     )
 
                 # Updates the database to the newer longer version
-                await db.cursor.execute(
-                    "UPDATE programs SET description = $1 WHERE guild_id = $2 AND user_id = $3",
-                    current_programs,
-                    ctx.guild_id,
-                    user_id,
-                )
+                await db.update_programs(user_id, current_programs)
 
                 # Grabs the user & makes a DM channel
                 user = client.get_user(user_id)
@@ -564,12 +536,7 @@ async def programs_reaction_handling(
                 final_programs += p_values[i] + ("\n" if i + 1 != len_p_values else "")
 
             # Update in the databse
-            await db.db.execute(
-                "UPDATE programs SET description = $1 WHERE guild_id = $2 AND user_id = $3",
-                final_programs,
-                ctx.guild_id,
-                user_id,
-            )
+            await db.update_programs(user_id, final_programs)
 
             # Open a DM
             user = client.get_user(user_id)

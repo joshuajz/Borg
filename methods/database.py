@@ -122,9 +122,7 @@ async def database_connection():
 
 
 @asyncinit
-class Guild_Info:
-    """The Guild_Info class.  Provides all of the functions required for dealing with the Borg database."""
-
+class Programs_DB:
     async def __init__(self, guild_id: int):
         """Initalizes self.guild_id & a database connection."""
         self.guild_id = guild_id
@@ -132,121 +130,58 @@ class Guild_Info:
         # Grab a database connection
         self.db = await database_connection()
 
-    async def grab_settings(self) -> dict:
-        """Fetches the server's settings.
+    async def grab_programs(self, user_id: int) -> str:
+        """Grabs all of a user's programs
+
+        Args:
+            user_id (int): The user's ID
 
         Returns:
-            dict or None: Returns None if there are no settings or the server's settings in a dictionary:
-                {
-                    'programs_channel': int, # The programs channel ID
-                    'course_default_school': int # The default school for course selection for this server.
-                }
+            str or None: None if the user has no programs.  A string containing all of the programs.  \n Seperated
         """
 
-        grab_info = await self.db.fetchrow(
-            "SELECT * FROM settings WHERE guild_id = $1", self.guild_id
-        )
-
-        if grab_info:
-            settings = {
-                "programs_channel": grab_info[1],
-                "course_default_school": grab_info[2],
-            }
-            return settings
-        else:
-            return None
-
-    async def grab_welcome(self) -> dict:
-        """Fetches a server's welcome settings.
-
-        Returns:
-            dict or None: Returns None if there are no settings or the welcome settings in a dictionary:
-                {
-                    'channel': int, # The channel ID where welcome messages are provided.
-                    'message': str, # The message to welcome a user
-                    'enabled': bool # Whether welcome messages are enabled.
-                }
-        """
-
-        data_pull = await self.db.fetchrow(
-            "SELECT * FROM welcome WHERE user_id = $1", self.guild_id
-        )
-
-        try:
-            welcome = {
-                "channel": data_pull[1],
-                "message": data_pull[2],
-                "enabled": data_pull[3],
-            }
-            return welcome
-        except:
-            return None
-
-    async def grab_commands(self) -> list:
-        """Fetches all of the commands for the server.
-
-        Returns:
-            list or None: None if there are no commands otherwise a List of Tuples:
-                (
-                    command (str), # The name or denominator for the command
-                    output (str), # The output message of the command
-                    image (None or str) # A link to an image to embed in the command
-                )
-        """
-        commands = []
-
-        commands_db = await self.db.fetch(
-            "SELECT command, output, image FROM custom_commands WHERE guild_id = $1",
+        programs_response = await self.db.fetchrow(
+            "SELECT description FROM programs WHERE guild_id = $1 AND user_id = $2",
             self.guild_id,
+            user_id,
         )
 
-        for c in commands_db:
-            commands.append((c[0], c[1], c[2]))
-
         try:
-            return commands
+            return programs_response[0]
         except:
             return None
 
-    async def add_command(self, name: str, description: str, image=None):
-        """Adds a command to the database.
+    async def update_programs(self, user_id, new_programs):
+        await self.db.execute(
+            "UPDATE programs SET description = $1 WHERE guild_id = $2 AND user_id = $3",
+            new_programs,
+            self.guild_id,
+            user_id,
+        )
 
-        Args:
-            name (str): The name or denominator for the command.
-            description (str): The description or text displayed when the command is called.
-            image (str, optional): A link to an image to embed. Defaults to None.
-        """
+    async def check_programs_exists(self, user_id):
+        count = await self.db.fetchrow(
+            "SELECT COUNT(user_id) FROM programs WHERE guild_id = $1 AND user_id = $2",
+            self.guild_id,
+            user_id,
+        )
 
-        async with self.db.transaction():
-            try:
-                await self.db.execute(
-                    "INSERT INTO custom_commands VALUES ($1, $2, $3, $4)",
-                    self.guild_id,
-                    name,
-                    description,
-                    image,
-                )
+        return count[0]
 
-            except Exception as e:
-                print(e)
+    async def add_programs(self, user_id, programs):
+        await self.db.execute(
+            "INSERT INTO programs VALUES ($1, $2, $3)", self.guild_id, user_id, programs
+        )
 
-    async def remove_command(self, command: str):
-        """Removes a command from the database.
 
-        Args:
-            command (str): The name or denominator for the command.
-        """
+@asyncinit
+class Roles_DB:
+    async def __init__(self, guild_id: int):
+        """Initalizes self.guild_id & a database connection."""
+        self.guild_id = guild_id
 
-        async with self.db.transaction():
-            try:
-                await self.db.execute(
-                    "DELETE FROM custom_commands WHERE guild_id = $1 AND command = $2",
-                    self.guild_id,
-                    command,
-                )
-
-            except Exception as e:
-                print(e)
+        # Grab a database connection
+        self.db = await database_connection()
 
     async def grab_roles(self) -> list:
         """Provides all of the roles on a server.
@@ -361,24 +296,215 @@ class Guild_Info:
             except Exception as e:
                 print(e)
 
-    async def grab_programs(self, user_id: int) -> str:
-        """Grabs all of a user's programs
 
-        Args:
-            user_id (int): The user's ID
+@asyncinit
+class Courses_DB:
+    async def __init__(self, school):
+        """Initalizes self.guild_id & a database connection."""
+        self.school = school
+
+        # Grab a database connection
+        self.db = await database_connection()
+
+    async def fetch_courses(self):
+        raw = await self.db.fetch(
+            "SELECT code FROM courses WHERE school = $1", self.school
+        )
+        codes = [i[0] for i in raw]
+
+        return codes
+
+    async def add_course(
+        self,
+        code,
+        number,
+        department,
+        name,
+        description,
+        requirements=None,
+        academic_level=None,
+        units=None,
+        campus=None,
+    ):
+        await self.db.execute(
+            "INSERT INTO courses VALUES ($1, $2, $3, $4, $5, $6, $7, %8, $9, $10)",
+            self.school,
+            code,
+            number,
+            department,
+            name,
+            description,
+            requirements,
+            academic_level,
+            units,
+            campus,
+        )
+
+
+@asyncinit
+class Commands_DB:
+    async def __init__(self, guild_id: int):
+        """Initalizes self.guild_id & a database connection."""
+        self.guild_id = guild_id
+
+        # Grab a database connection
+        self.db = await database_connection()
+
+    async def grab_commands(self) -> list:
+        """Fetches all of the commands for the server.
 
         Returns:
-            str or None: None if the user has no programs.  A string containing all of the programs.  \n Seperated
+            list or None: None if there are no commands otherwise a List of Tuples:
+                (
+                    command (str), # The name or denominator for the command
+                    output (str), # The output message of the command
+                    image (None or str) # A link to an image to embed in the command
+                )
+        """
+        commands = []
+
+        commands_db = await self.db.fetch(
+            "SELECT command, output, image FROM custom_commands WHERE guild_id = $1",
+            self.guild_id,
+        )
+
+        for c in commands_db:
+            commands.append((c[0], c[1], c[2]))
+
+        try:
+            return commands
+        except:
+            return None
+
+    async def add_command(self, name: str, description: str, image=None):
+        """Adds a command to the database.
+
+        Args:
+            name (str): The name or denominator for the command.
+            description (str): The description or text displayed when the command is called.
+            image (str, optional): A link to an image to embed. Defaults to None.
         """
 
-        programs_response = await self.db.fetchrow(
-            "SELECT description FROM programs WHERE guild_id = $1 AND user_id = $2",
+        async with self.db.transaction():
+            try:
+                await self.db.execute(
+                    "INSERT INTO custom_commands VALUES ($1, $2, $3, $4)",
+                    self.guild_id,
+                    name,
+                    description,
+                    image,
+                )
+
+            except Exception as e:
+                print(e)
+
+    async def remove_command(self, command: str):
+        """Removes a command from the database.
+
+        Args:
+            command (str): The name or denominator for the command.
+        """
+
+        async with self.db.transaction():
+            try:
+                await self.db.execute(
+                    "DELETE FROM custom_commands WHERE guild_id = $1 AND command = $2",
+                    self.guild_id,
+                    command,
+                )
+
+            except Exception as e:
+                print(e)
+
+    async def fetch_command(self, command):
+        return await self.db.fetchrow(
+            "SELECT command, output, image FROM custom_commands WHERE guild_id = $1 AND command = $2",
+            self.guild_id,
+            command,
+        )
+
+    async def delete_all_programs(self, user_id):
+        await self.db.execute(
+            "DELETE FROM programs WHERE guild_id = $1 AND user_id = $2",
             self.guild_id,
             user_id,
         )
 
+    async def update_programs(self, user_id, message):
+        await self.db.execute(
+            "UPDATE programs SET description = $1 WHERE guild_id = $2 AND user_id = $3",
+            message,
+            self.guild_id,
+            user_id,
+        )
+
+
+@asyncinit
+class Guild_DB:
+    """The Guild_Info class.  Provides all of the functions required for dealing with the Borg database."""
+
+    async def __init__(self, guild_id: int):
+        """Initalizes self.guild_id & a database connection."""
+        self.guild_id = guild_id
+
+        # Grab a database connection
+        self.db = await database_connection()
+
+    async def grab_settings(self) -> dict:
+        """Fetches the server's settings.
+
+        Returns:
+            dict or None: Returns None if there are no settings or the server's settings in a dictionary:
+                {
+                    'programs_channel': int, # The programs channel ID
+                    'course_default_school': int # The default school for course selection for this server.
+                }
+        """
+
+        grab_info = await self.db.fetchrow(
+            "SELECT * FROM settings WHERE guild_id = $1", self.guild_id
+        )
+
+        if grab_info:
+            settings = {
+                "programs_channel": grab_info[1],
+                "course_default_school": grab_info[2],
+            }
+            return settings
+        else:
+            return None
+
+    async def update_settings(self, setting, newvalue):
+        await self.db.execute(
+            "UPDATE settings SET $1 = $2 WHERE guild_id = $3",
+            setting,
+            newvalue,
+            self.guild_id,
+        )
+
+    async def grab_welcome(self) -> dict:
+        """Fetches a server's welcome settings.
+
+        Returns:
+            dict or None: Returns None if there are no settings or the welcome settings in a dictionary:
+                {
+                    'channel': int, # The channel ID where welcome messages are provided.
+                    'message': str, # The message to welcome a user
+                    'enabled': bool # Whether welcome messages are enabled.
+                }
+        """
+
+        data_pull = await self.db.fetchrow(
+            "SELECT * FROM welcome WHERE user_id = $1", self.guild_id
+        )
+
         try:
-            return programs_response[0]
+            welcome = {
+                "channel": data_pull[1],
+                "message": data_pull[2],
+                "enabled": data_pull[3],
+            }
+            return welcome
         except:
             return None
 

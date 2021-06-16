@@ -1,5 +1,4 @@
 import discord
-import sqlite3
 from methods.embed import create_embed, add_field
 import json
 import os
