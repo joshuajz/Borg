@@ -37,7 +37,7 @@ async def on_ready():
 
     await create_database()
 
-    await pull_courses(bot)
+    # await pull_courses(bot)
 
     # Default Settings Check
     guilds_on = [guild.id for guild in bot.guilds]

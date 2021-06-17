@@ -2,7 +2,7 @@ import discord
 from methods.embed import create_embed, add_field
 import json
 import os
-from methods.database import database_connection
+from methods.database import Courses_DB
 from methods.paged_command import page_command
 
 # Options:
@@ -16,28 +16,28 @@ SCHOOLS = ("queens", "waterloo", "uoft")
 
 
 async def course_embed(course):
-    if course[0] == "queens":
+    if course["school"] == "queens":
         requirements, academic_level, units = True, True, True
-    elif course[0] == "waterloo":
+    elif course["school"] == "waterloo":
         requirements, academic_level, units = True, False, False
     # elif course[0] == 'uoft':
 
     embed = create_embed(
-        f"{course[1]} - {course[4]}",
-        course[5],
+        f"{course['code']} - {course['name']}",
+        course["description"],
         "cyan",
-        thumbnail=COURSE_IMAGES[course[0]],
+        thumbnail=COURSE_IMAGES[course["school"]],
     )
 
     if requirements:
-        if course[0] == "queens":
-            requirements = course[6]
+        if course["school"] == "queens":
+            requirements = course["requirements"]
             if requirements is None or requirements == "":
                 requirements = "Unknown/No Requirements.  Check the website."
             else:
                 requirements = requirements.replace(". ", ".\n")
-        elif course[0] in ["waterloo"]:
-            requirements = course[6]
+        elif course["school"] == "waterloo":
+            requirements = course["requirements"]
             if requirements is None:
                 requirements = "Unknown/No Requirements.  Check the university website."
         else:
@@ -51,32 +51,25 @@ async def course_embed(course):
     if units:
         add_field(embed, "Units", course[8], True)
 
+    return embed
+
 
 async def course(ctx, bot, course, school=None):
-    db, cursor = database_connection()
+    db = await Courses_DB(school)
 
     if school:
-        cursor.execute(
-            "SELECT * FROM courses WHERE school = %s AND code = %s", (school, course)
-        )
-        course_fetched = cursor.fetchall()
+        course_fetched = await db.fetch_course(course)
 
-        if course_fetched is None or len(course_fetched) == 0:
+        if len(course_fetched) == 0:
             faculty = grab_faculty(course)
 
-            cursor.execute(
-                "SELECT COUNT(department) FROM courses WHERE school = %s AND department = %s",
-                (school, faculty),
-            )
+            department_fetch = await db.department_exist(faculty)
 
             # Check to see if a proper faculty was provided
-            if cursor.fetchone() is None:
-                cursor.execute(
-                    "SELECT code FROM courses WHERE school = %s AND department = %s",
-                    (school, faculty.strip().upper()),
-                )
-                multiple_courses = cursor.fetchall()
-                multiple_courses = [f"**{i[1]}** - *{i[4]}*" for i in multiple_courses]
+            if department_fetch:
+                codes = await db.fetch_codes_from_department(faculty)
+
+                multiple_courses = [f"**{i['code']}** - *{i['name']}*" for i in codes]
                 multiple_courses.sort()
 
                 await page_command(
@@ -98,27 +91,22 @@ async def course(ctx, bot, course, school=None):
 
     else:
         # We don't have a school so we're going to need to query every school that we have for that course code
-        results = grab_courses(course)
+        results = await db.fetch_courses_all(course=course)
 
         if len(results) == 0:
-            print(course.strip())
-            cursor.execute(
-                "SELECT school FROM courses WHERE department = %s",
-                (course.strip().upper(),),
-            )
-            results = cursor.fetchall()
+
+            results = await db.fetch_schools_with_department(course.strip().upper())
             if results is not None:
                 results = [i[0] for i in results]
                 results = list(dict.fromkeys(results))
 
                 if len(results) == 1:
-                    cursor.execute(
-                        "SELECT * FROM courses WHERE school = %s AND department = %s",
-                        (results[0], course.strip().upper()),
+                    db.school = results[0]
+                    courses = await db.fetch_codes_from_department(
+                        grab_faculty(course).upper()
                     )
 
-                    courses = cursor.fetchall()
-                    courses = [f"**{i[1]}** - *{i[4]}*" for i in courses]
+                    courses = [f"**{i['code']}** - *{i['name']}*" for i in courses]
                     await page_command(
                         ctx,
                         bot,
@@ -132,30 +120,12 @@ async def course(ctx, bot, course, school=None):
                     hidden=True,
                 )
         elif len(results) == 1:
-            for school, course in results.items():
-                embed = await course_embed(course)
-                await ctx.send(embed=embed)
+            embed = await course_embed(course[0])
+            await ctx.send(embed=embed)
         else:
             # Multiple courses provided.
             courses = [f"{i[0].capitalize()}: {i[1]}" for i in results]
             await page_command(ctx, bot, courses, "Possible Courses & Schools:")
-
-
-def grab_courses(course):
-    db, cursor = database_connection()
-
-    results = {}
-
-    for school in SCHOOLS:
-        cursor.execute(
-            "SELECT * FROM courses WHERE school = %s AND code = %s", (school, course)
-        )
-        result = cursor.fetchone()
-
-        if result:
-            results[school] = result
-
-    return results
 
 
 def grab_faculty(course):

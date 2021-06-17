@@ -306,6 +306,40 @@ class Courses_DB:
         # Grab a database connection
         self.db = await database_connection()
 
+        self.SCHOOLS = ("queens", "uoft", "waterloo")
+
+    async def fetch_school(self, department):
+        return await self.db.fetch(
+            "SELECT school FROM courses WHERE department = $1", department
+        )
+
+    async def fetch_codes_from_department(self, department):
+        result = await self.db.fetch(
+            "SELECT code, name FROM courses WHERE school = $1 AND department = $2",
+            self.school,
+            department.strip().upper(),
+        )
+        return result
+
+    async def fetch_course(self, course):
+        result = await self.db.fetch(
+            "SELECT * FROM courses WHERE school = $1 AND code = $2", self.school, course
+        )
+        return result
+
+    async def department_exist(self, department):
+        result = await self.db.fetchrow(
+            "SELECT EXISTS(SELECT department FROM courses WHERE school = $1 AND department = $2)",
+            self.school,
+            department,
+        )
+        return result[0]
+
+    async def fetch_schools_with_department(self, department):
+        return await self.db.fetch(
+            "SELECT school FROM courses WHERE department = $1", department
+        )
+
     async def fetch_courses(self):
         raw = await self.db.fetch(
             "SELECT code FROM courses WHERE school = $1", self.school
@@ -313,6 +347,18 @@ class Courses_DB:
         codes = [i[0] for i in raw]
 
         return codes
+
+    async def fetch_courses_all(self, course):
+        results = {}
+        for school in self.SCHOOLS:
+            r = await self.db.fetchrow(
+                "SELECT * FROM courses WHERE school = $1 AND code = $2", school, course
+            )
+
+            if r:
+                results[school] = r
+
+        return results
 
     async def add_course(
         self,
