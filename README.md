@@ -27,7 +27,7 @@ ALTER USER postgres WITH PASSWORD 'newpasswordhere';
 sudo service postgresql start
 # Result will be similar to: * Starting PostgreSQL 13 database server
 ```
-5. Note your server's port using `sudo service postgresql status`.  The output will be similar to: `13/main (port 5433): online`.  Place the port in the .env file.
+5. Note your server's port using `sudo service postgresql status`.  The output will be similar to: `13/main (port 5433): online`.  Place the port in the .env file.  You could also run: `sudo netstat -plunt |grep postgres` to get an output of what port(s) postgresql is listening to.
 6. NOTE: You can shut down the Postgresql server with `sudo service postgresql stop`
 
 ### Borg Setup

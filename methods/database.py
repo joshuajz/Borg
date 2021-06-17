@@ -42,7 +42,7 @@ async def create_database():
 
     # Create the Borg database
     try:
-        con.cursor("""CREATE database borg""")
+        con.execute("""CREATE database borg""")
     except:
         print("Database Already Created.")
         return await database_connection()
