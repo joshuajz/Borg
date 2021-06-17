@@ -42,7 +42,7 @@ async def create_database():
 
     # Create the Borg database
     try:
-        con.execute("""CREATE database borg""")
+        await con.execute("""CREATE database borg""")
     except:
         print("Database Already Created.")
         return await database_connection()
@@ -373,7 +373,7 @@ class Courses_DB:
         campus=None,
     ):
         await self.db.execute(
-            "INSERT INTO courses VALUES ($1, $2, $3, $4, $5, $6, $7, %8, $9, $10)",
+            "INSERT INTO courses(school, code, number, department, name, description, requirements, academic_level, units, campus) VALUES ($1, $2, $3, $4, $5, $6, $7, %8, $9, $10)",
             self.school,
             code,
             number,
