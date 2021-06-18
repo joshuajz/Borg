@@ -5,7 +5,7 @@ from discord_slash.utils.manage_commands import create_option
 from commands.welcome import welcome_setup, welcome_toggle
 
 
-class Slash_Welcome(commands.Cog):
+class SlashWelcome(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -43,4 +43,4 @@ class Slash_Welcome(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(Slash_Welcome(bot))
+    bot.add_cog(SlashWelcome(bot))

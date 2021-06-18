@@ -7,7 +7,7 @@ from methods.embed import create_embed_template
 from methods.database import Roles_DB
 
 
-class Slash_Roles(commands.Cog):
+class SlashRoles(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -39,7 +39,7 @@ class Slash_Roles(commands.Cog):
     async def _roles_list(self, ctx):
         result = await roles(ctx, self.bot)
 
-        if result != True:
+        if result is False:
             await ctx.send(result[1], hidden=True)
 
     @cog_ext.cog_subcommand(
@@ -133,4 +133,4 @@ class Slash_Roles(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(Slash_Roles(bot))
+    bot.add_cog(SlashRoles(bot))

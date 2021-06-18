@@ -12,7 +12,7 @@ from commands.commands import (
 from methods.embed import create_embed
 
 
-class Classic_Custom_Commands(commands.Cog):
+class ClassicCustomCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -21,8 +21,87 @@ class Classic_Custom_Commands(commands.Cog):
         """!commands -> Lists all of the commands."""
         result = await custom_command_list(self.bot, ctx)
 
-        if result != True:
+        if result is False:
             await ctx.send(embed=result[1])
+
+    async def add_command(self, msg: list, ctx: discord.ext.commands.Context):
+        """Handles command additions to the database.
+
+        Args:
+            msg (list): Message object split up
+            ctx (discord.ext.commands.Context): Context
+        """
+
+        if len(msg) == 3:
+            if "\n" in msg[2]:
+                command_input = msg[2].split("\n")
+                command = (
+                    command_input[0][1::]
+                    if command_input[0][0] == "!"
+                    else command_input[0]
+                )
+
+                description = command_input[1]
+
+                if description.startswith("image="):
+                    image = description.split("image=")[1]
+                    description = None
+                else:
+                    image = None
+
+                result = await custom_command_add(
+                    ctx, command, description, image
+                )
+                await ctx.send(embed=result[1])
+
+        # We have enough arguments for adding a command
+        elif len(msg) >= 4:
+            command = msg[2][1::] if msg[2][0] == "!" else msg[2]
+
+            if msg[-1].startswith("image="):
+                image = msg[-1].split("image=")[1]
+                description = " ".join(msg[3:-1])
+            else:
+                image = None
+                description = " ".join(msg[3::])
+
+            if "\n" in command:
+                command_values = command.split("\n")
+                command = command_values[0]
+                if description:
+                    description = command_values[1] + " " + description
+                else:
+                    description = command_values[1]
+
+            result = await custom_command_add(ctx, command, description, image)
+            await ctx.send(embed=result[1])
+        else:
+            embed = create_embed(
+                "Command: !command add",
+                "**Description**: Allows you to add a command.\n**Usage**:\n!command add !command_name command's description goes here image=linktoimg\n!command add !hello Hello image=https://google.com/image.png\n!command add hi Hello how are you?",
+                "orange",
+            )
+            await ctx.send(embed=embed)
+
+    async def remove_command(self, msg: list, ctx: discord.ext.commands.Context):
+        """Handles command removal from the database
+
+        Args:
+            msg (list): Message object
+            ctx (discord.ext.commands.Context): Context
+        """
+
+        if len(msg) == 3:
+            command = msg[2][1::] if msg[2][0] == "!" else msg[2]
+            result = await custom_command_remove(ctx, command)
+            await ctx.send(embed=result[1])
+        else:
+            embed = create_embed(
+                "Command: !command remove",
+                "**Description**: Allows you to remove a command.\n**Usage**:\n!command remove command_name\n!command remove !command_name\n!command remove hi",
+                "orange",
+            )
+            await ctx.send(embed=embed)
 
     @commands.command(name="command")
     async def _command(self, ctx):
@@ -37,78 +116,19 @@ class Classic_Custom_Commands(commands.Cog):
                 "orange",
             )
             await ctx.send(embed=embed)
-        else:
-            # Subcommand (ie. !commands add -> subcommand = add)
-            subcommand = msg[1].strip()
-            if subcommand == "add" or subcommand == "a":
-                # ex: !command add hello hello
+            return
 
-                # ex: !command add hi
-                # hi
-                if len(msg) == 3:
-                    if "\n" in msg[2]:
-                        command_input = msg[2].split("\n")
-                        command = (
-                            command_input[0][1::]
-                            if command_input[0][0] == "!"
-                            else command_input[0]
-                        )
+        # Subcommand (ie. !commands add -> subcommand = add)
+        subcommand = msg[1].strip()
+        if subcommand == "add" or subcommand == "a":
+            # ex: !command add hello hello
+            """ex: !command add hi -> hi"""
+            await self.add_command(msg, ctx)
 
-                        description = command_input[1]
-
-                        if description.startswith("image="):
-                            image = description.split("image=")[1]
-                            description = None
-                        else:
-                            image = None
-
-                        result = await custom_command_add(
-                            ctx, command, description, image
-                        )
-                        await ctx.send(embed=result[1])
-
-                # We have enough arguments for adding a command
-                elif len(msg) >= 4:
-                    command = msg[2][1::] if msg[2][0] == "!" else msg[2]
-
-                    if msg[-1].startswith("image="):
-                        image = msg[-1].split("image=")[1]
-                        description = " ".join(msg[3:-1])
-                    else:
-                        image = None
-                        description = " ".join(msg[3::])
-
-                    if "\n" in command:
-                        command_values = command.split("\n")
-                        command = command_values[0]
-                        if description:
-                            description = command_values[1] + " " + description
-                        else:
-                            description = command_values[1]
-
-                    result = await custom_command_add(ctx, command, description, image)
-                    await ctx.send(embed=result[1])
-                else:
-                    embed = create_embed(
-                        "Command: !command add",
-                        "**Description**: Allows you to add a command.\n**Usage**:\n!command add !command_name command's description goes here image=linktoimg\n!command add !hello Hello image=https://google.com/image.png\n!command add hi Hello how are you?",
-                        "orange",
-                    )
-                    await ctx.send(embed=embed)
-            elif subcommand == "remove" or subcommand == "r":
-                #: !command remove hello
-                if len(msg) == 3:
-                    command = msg[2][1::] if msg[2][0] == "!" else msg[2]
-                    result = await custom_command_remove(ctx, command)
-                    await ctx.send(embed=result[1])
-                else:
-                    embed = create_embed(
-                        "Command: !command remove",
-                        "**Description**: Allows you to remove a command.\n**Usage**:\n!command remove command_name\n!command remove !command_name\n!command remove hi",
-                        "orange",
-                    )
-                    await ctx.send(embed=embed)
+        elif subcommand == "remove" or subcommand == "r":
+            #: !command remove hello
+            await self.remove_command(msg, ctx)
 
 
 def setup(bot):
-    bot.add_cog(Classic_Custom_Commands(bot))
+    bot.add_cog(ClassicCustomCommands(bot))

@@ -5,7 +5,7 @@ from commands.course import course as call_course
 from discord_slash.utils.manage_commands import create_option, create_choice
 
 
-class Slash_Help(commands.Cog):
+class SlashCourse(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -53,4 +53,4 @@ class Slash_Help(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(Slash_Help(bot))
+    bot.add_cog(SlashCourse(bot))

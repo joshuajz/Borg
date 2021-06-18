@@ -1,4 +1,4 @@
-import discord
+import discord.ext
 from urlextract import URLExtract
 from methods.database import Commands_DB
 from typing import Tuple
@@ -63,7 +63,7 @@ async def custom_command_add(
         ctx (discord.ext.commands.Context): Context
         name (str): Name of the command to add
         description (str): Description of the command
-        image (strorNone): Image link for the command
+        image (str or None): Image link for the command
 
     Returns:
         Tuple[bool, discord.Embed]: [Status: bool, Embed: discord.Embed]
@@ -72,7 +72,7 @@ async def custom_command_add(
     name = name[1::] if name[0] == "!" else name
 
     # Permissions check
-    if ctx.author.guild_permissions.administrator != True:
+    if ctx.author.guild_permissions.administrator is False:
         return (
             False,
             create_embed_template(
@@ -172,7 +172,7 @@ async def custom_command_remove(
     """
 
     # Permissions check
-    if ctx.author.guild_permissions.administrator != True:
+    if ctx.author.guild_permissions.administrator is False:
         return (
             False,
             create_embed_template(
@@ -247,6 +247,6 @@ async def custom_command_handling(ctx: discord.ext.commands.Context, command: st
         if command.lower() == c[0]:
 
             embed = create_embed(f"{command.capitalize()}", f"{c[1]}", "orange")
-            if c[2] != None:
+            if c[2] is not None:
                 embed.set_image(url=c[2])
             await ctx.channel.send(embed=embed)

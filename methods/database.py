@@ -1,7 +1,6 @@
 import asyncpg
 from dotenv import load_dotenv
 import os
-import asyncio
 from asyncinit import asyncinit
 
 
@@ -495,6 +494,17 @@ class Guild_DB:
 
         # Grab a database connection
         self.db = await database_connection()
+
+    async def update_welcome(self, settings: dict):
+
+        check = await self.db.fetchrow("SELECT EXISTS(SELECT guild_id FROM welcome WHERE guild_id = $1)", self.guild_id)
+
+        if check[0]:
+            await self.db.execute("UPDATE welcome SET channel = $1, message = $2, enabled = $3 WHERE guild_id = $4", settings['channel'], settings['message'], settings['enabled'], self.guild_id)
+
+        else:
+            await self.db.execute("INSERT INTO welcome VALUES($1, $2, $3, $4)", self.guild_id, settings['channel'], settings['message'], settings['enabled'])
+
 
     async def grab_settings(self) -> dict:
         """Fetches the server's settings.

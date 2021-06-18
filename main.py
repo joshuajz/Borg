@@ -35,19 +35,21 @@ bot.remove_command("help")
 async def on_ready():
     """When the bot starts up."""
 
+    # Create the database
     await create_database()
 
-    # await pull_courses(bot)
+    # Pull all of the courses into the database
+    await pull_courses(bot)
 
     # Default Settings Check
     guilds_on = [guild.id for guild in bot.guilds]
     database = await Guild_DB(0)
     guilds_db = await database.db.fetch("SELECT guild_id FROM settings")
     guilds_db = [i[0] for i in guilds_db]
-    if guilds_db is not None:
-        for guild in guilds_on:
-            if guild not in guilds_db:
-                await (await Guild_DB(guild)).create_default_settings()
+
+    for guild in guilds_on:
+        if guild not in guilds_db:
+            await (await Guild_DB(guild)).create_default_settings()
 
     print(f"Logged in as {bot.user}.")
 
@@ -58,17 +60,15 @@ async def on_message(message: discord.Message):
 
     if (
         message
-        and message.content != None
-        and message.author != None
-        and message.author.name != None
+        and message.content is not None
+        and message.author is not None
+        and message.author.name is not None
     ):
         print(f"{message.guild.name} - {message.author.name}: {message.content}")
 
     # Don't do anything with a bot's message
     if message.author == bot.user:
         return
-
-    # Potential regex: (?<=^!)(\w*)
 
     if message.content.startswith("!"):
         if "\n" in message.content:
@@ -92,7 +92,7 @@ async def on_raw_reaction_add(reaction: discord.RawReactionActionEvent):
     if reaction.member.bot:
         return
 
-    if await programs_reaction_handling(reaction, bot) == True:
+    if await programs_reaction_handling(reaction, bot) is True:
         return
 
 
@@ -107,7 +107,7 @@ async def on_member_join(member: discord.Member):
 async def on_guild_join(guild: discord.Guild):
     """When the bot joins a guild."""
 
-    await (await Guild_DB(guild.guild.id)).create_default_settings()
+    await (await Guild_DB(guild.id)).create_default_settings()
 
 
 # Load the various commands

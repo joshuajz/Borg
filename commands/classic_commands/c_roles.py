@@ -7,7 +7,7 @@ sys.path.append("../..")
 from commands.roles import role_toggle, roles
 
 
-class Classic_Roles(commands.Cog):
+class ClassicRoles(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -16,7 +16,7 @@ class Classic_Roles(commands.Cog):
         """!roles command"""
         result = await roles(ctx, self.bot)
 
-        if result != True:
+        if result is False:
             await ctx.send(embed=result[1])
 
     @commands.command(name="role")
@@ -24,11 +24,11 @@ class Classic_Roles(commands.Cog):
         """!role command"""
         result = await role_toggle(ctx, role.lower())
 
-        if result[0] == False:
+        if result[0] is False:
             await ctx.send(result[1])
         else:
             await ctx.send(embed=result[1])
 
 
 def setup(bot):
-    bot.add_cog(Classic_Roles(bot))
+    bot.add_cog(ClassicRoles(bot))

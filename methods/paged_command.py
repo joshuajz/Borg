@@ -13,19 +13,6 @@ async def page_command(ctx, bot, items: list, title: str):
         title (str): Title of the page list
     """
 
-    def check(reaction: discord.Reaction, user: discord.User) -> bool:
-        """Checks to see if the user who added the reaction is the same as the person who callled the command
-
-        Args:
-            reaction (discord.Reaction): The actual added reaction
-            user (discord.User): The user instance
-
-        Returns:
-            bool: If the user who ran the command added the reaction
-        """
-
-        return user == ctx.author and str(reaction) in ["◀️", "▶️"]
-
     if type(items) != list:
         items = list(items)
 
@@ -35,7 +22,7 @@ async def page_command(ctx, bot, items: list, title: str):
     # Creates lists splitting every 20 values
     pages_lists = []
     for i in range(0, len(items), 20):
-        pages_lists.append(items[i : i + 20])
+        pages_lists.append(items[i: i + 20])
 
     # If there is only one list, we can just print out the first page and then end
     if len(pages_lists) == 1:
@@ -60,13 +47,30 @@ async def page_command(ctx, bot, items: list, title: str):
         i += 1
 
     # Send the original message w/ reactions
-    msg = await ctx.send(embed=messages[1])
+    await send_page_command(ctx, bot, messages)
+
+
+async def send_page_command(ctx, bot, messages):
+    def check(reaction: discord.Reaction, user: discord.User) -> bool:
+        """Checks to see if the user who added the reaction is the same as the person who callled the command
+
+        Args:
+            reaction (discord.Reaction): The actual added reaction
+            user (discord.User): The user instance
+
+        Returns:
+            bool: If the user who ran the command added the reaction
+        """
+
+        return user == ctx.author and str(reaction) in ["◀️", "▶️"]
+
+    msg = await ctx.send(embed=messages[0])
     await msg.add_reaction("◀️")
     await msg.add_reaction("▶️")
 
     # Current page & total amount of pages
-    current_page = 1
-    amount_pages = len(messages)
+    current_page = 0
+    amount_pages = len(messages) - 1
 
     while True:
         try:

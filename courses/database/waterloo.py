@@ -6,10 +6,12 @@ from methods.database import Courses_DB
 
 cwd = os.getcwd().split("/")
 
-while cwd[-1] != "Borg":
+while '.env' not in os.listdir():
     try:
         os.chdir("..")
-        print(os.getcwd())
+        if os.getcwd() == '/' or os.getcwd() == '\\':
+            break
+
     except:
         print(
             "Error moving directories.  Make sure you haven't renamed the folder that Borg resides in."
@@ -17,6 +19,8 @@ while cwd[-1] != "Borg":
 
 cfg = dotenv_values(".env")
 api_key = cfg["waterloo_api"]
+if api_key is None:
+    print("Error.  Can not find .env file and therefore there is no Waterloo API key.")
 
 
 async def get_term():

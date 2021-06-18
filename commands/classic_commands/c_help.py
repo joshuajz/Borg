@@ -6,7 +6,7 @@ sys.path.append("../..")
 from commands.help import help_command
 
 
-class Classic_Help(commands.Cog):
+class ClassicHelp(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -17,4 +17,4 @@ class Classic_Help(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(Classic_Help(bot))
+    bot.add_cog(ClassicHelp(bot))

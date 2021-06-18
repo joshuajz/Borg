@@ -4,7 +4,7 @@ from discord_slash import cog_ext, SlashContext
 from commands.help import help_command
 
 
-class Slash_Help(commands.Cog):
+class SlashHelp(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -18,4 +18,4 @@ class Slash_Help(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(Slash_Help(bot))
+    bot.add_cog(SlashHelp(bot))

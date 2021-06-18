@@ -16,6 +16,8 @@ SCHOOLS = ("queens", "waterloo", "uoft")
 
 
 async def course_embed(course):
+    requirements = None
+
     if course["school"] == "queens":
         requirements, academic_level, units = True, True, True
     elif course["school"] == "waterloo":
@@ -113,7 +115,6 @@ async def course(ctx, bot, course, school=None):
                         courses,
                         f"{results[0].capitalize()} Courses w/ the {course.strip().upper()} department.",
                     )
-                    return
             else:
                 await ctx.send(
                     "You provided a valid department, but multiple schools share that same department name.  Please provide a department and school name.",

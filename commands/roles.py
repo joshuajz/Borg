@@ -1,4 +1,4 @@
-import discord
+import discord.ext
 from methods.database import Roles_DB
 from methods.embed import create_embed, add_field, create_embed_template
 from methods.paged_command import page_command
@@ -55,7 +55,7 @@ async def role_toggle(
         embed = create_embed(
             "Removed Role", f"You removed the {actual_role.mention} role.", "dark_blue"
         )
-        return (True, embed)
+        return True, embed
 
     else:
         # Remove the role
@@ -74,12 +74,12 @@ async def role_toggle(
         embed = create_embed(
             "Added Role", f"You added the {actual_role.mention} role.", "light_green"
         )
-        return (True, embed)
+        return True, embed
 
 
 async def roles(
     ctx: discord.ext.commands.Context, bot: discord.ClientUser.bot
-) -> Tuple[bool, discord.Embed]:
+) -> Tuple[bool, discord.Embed] or bool:
     """Lists out this server's roles
 
     Args:
@@ -122,7 +122,7 @@ async def roles(
 
 
 async def add_role(ctx: discord.ext.commands.Context, name: str, role_id: int):
-    """Adds a role to the dataabase
+    """Adds a role to the database
 
     Args:
         ctx (discord.ext.commands.Context): Context
@@ -130,7 +130,7 @@ async def add_role(ctx: discord.ext.commands.Context, name: str, role_id: int):
         role_id (int): The role's ID
     """
 
-    if ctx.author.guild_permissions.administrator != True:
+    if ctx.author.guild_permissions.administrator is False:
         return (
             False,
             create_embed_template(
@@ -155,7 +155,8 @@ async def add_role(ctx: discord.ext.commands.Context, name: str, role_id: int):
             embed = create_embed("Role Added", "", "light_green")
             add_field(embed, "Role", actual_role.mention, True)
             add_field(embed, "Command", f"!role {name}", True)
-            return (True, embed)
+
+            return True, embed
 
         else:
             return (
@@ -186,7 +187,7 @@ async def remove_role(ctx, role_id: int):
         role_id (int): The ID of the role
     """
 
-    if ctx.author.guild_permissions.administrator != True:
+    if ctx.author.guild_permissions.administrator is False:
         return (
             False,
             create_embed_template(

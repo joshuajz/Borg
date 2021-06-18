@@ -1,4 +1,3 @@
-import discord
 from discord.ext import commands
 from discord_slash import cog_ext, SlashContext
 from discord_slash.utils.manage_commands import create_option
@@ -10,10 +9,9 @@ from commands.programs import (
     programs_edit,
     programs_remove,
 )
-from methods.embed import create_embed
 
 
-class Slash_Programs(commands.Cog):
+class SlashPrograms(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -38,6 +36,7 @@ class Slash_Programs(commands.Cog):
     )
     async def _programs_add(self, ctx, programs, user=None):
         """/programs add"""
+
         # Determines the user to add the programs to
         if user is not None and ctx.author.guild_permissions.administrator:
             user = parse_channel(user)
@@ -71,7 +70,7 @@ class Slash_Programs(commands.Cog):
     )
     async def _programs_setup(self, ctx, channel):
         """/programs setup"""
-        if ctx.author.guild_permissions.administrator != True:
+        if ctx.author.guild_permissions.administrator is False:
             await ctx.send(
                 "You cannot run this command as you do not have administrator permissions.  Ask an admin to run /programs setup.",
                 hidden=True,
@@ -127,7 +126,7 @@ class Slash_Programs(commands.Cog):
     )
     async def _programs_edit(self, ctx, program_num, new_text, user=None):
         """/programs edit"""
-        if user == None:
+        if user is None:
             user = ctx.author.id
 
         result = await programs_edit(ctx, self.bot, user, program_num, new_text)
@@ -155,7 +154,7 @@ class Slash_Programs(commands.Cog):
     )
     async def _programs_remove(self, ctx, removal, user=None):
         """/programs remove"""
-        if user == None:
+        if user is None:
             user = ctx.author.id
         else:
             user = user.id
@@ -166,4 +165,4 @@ class Slash_Programs(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(Slash_Programs(bot))
+    bot.add_cog(SlashPrograms(bot))

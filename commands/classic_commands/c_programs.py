@@ -15,7 +15,7 @@ from methods.data import parse_id
 from methods.embed import create_embed, create_embed_template
 
 
-class Classic_Programs(commands.Cog):
+class ClassicPrograms(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -147,4 +147,4 @@ class Classic_Programs(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(Classic_Programs(bot))
+    bot.add_cog(ClassicPrograms(bot))

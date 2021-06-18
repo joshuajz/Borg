@@ -1,24 +1,25 @@
 import discord
-from methods.database import database_connection
+from methods.database import Guild_DB
 from methods.embed import create_embed, add_field
 
 
 async def welcome_handling(ctx, client):
     """Handles welcoming new users."""
-    db = await database_connection(ctx.guild.id)
+    db = await Guild_DB(ctx.guild.id)
 
     # Grabs this server's info
-    welcome_info = db["db"].execute("SELECT * FROM welcome").fetchone()
+    welcome_info = await db.grab_welcome()
 
     # Returns if there isn't any
-    if welcome_info[2] == 0:
+    if len(welcome_info) != 3:
         return
 
-    if welcome_info[0] == None or welcome_info[1] == None:
-        return
+    message = welcome_info['message']
+    channel = welcome_info['channel']
+    enabled = welcome_info['enabled']
 
-    message = welcome_info[1]
-    channel = welcome_info[0]
+    if message is None or channel is None or enabled is False:
+        return
 
     # Send the message
     channel = client.get_channel(int(channel))
@@ -27,17 +28,13 @@ async def welcome_handling(ctx, client):
 
 async def welcome_setup(ctx, channel: int, description: str):
     """Sets up the welcome messages."""
-    if ctx.author.guild_permissions.administrator != True:
+    if ctx.author.guild_permissions.administrator is False:
         return
 
-    db = await database_connection(ctx.guild.id)
+    db = await Guild_DB(ctx.guild.id)
 
     # Updates the DB
-    db["db"].execute(
-        "UPDATE welcome SET channel = ?, message = ?, enabled = ?",
-        (channel, description, True),
-    )
-    db["con"].commit()
+    await db.update_welcome({'channel': channel, 'message': description, 'enabled': True})
 
     # Send status message
     embed = create_embed("Welcome Message Created Successfully", "", "light_green")
@@ -47,23 +44,20 @@ async def welcome_setup(ctx, channel: int, description: str):
 
 
 async def welcome_toggle(ctx):
-    if ctx.author.guild_permissions.administrator != True:
+    if ctx.author.guild_permissions.administrator is False:
         return
 
-    db = await database_connection(ctx.guild.id)
+    db = await Guild_DB(ctx.guild.id)
 
-    welcome_info = list(db["db"].execute("SELECT * FROM WELCOME").fetchone())
-    if welcome_info[2] == 0:
-        welcome_info[2] = 1
+    welcome_info = await db.grab_welcome()
+
+    if welcome_info['enabled'] is False:
         embed = create_embed("Welcome Message Enabled", "", "light_green")
+        welcome_info['enabled'] = True
     else:
-        welcome_info[2] = 0
         embed = create_embed("Welcome Message Disabled", "", "red")
+        welcome_info['enabled'] = False
 
-    db["db"].execute(
-        "UPDATE welcome SET channel = ?, message = ?, enabled = ?",
-        (welcome_info[0], welcome_info[1], welcome_info[2]),
-    )
-    db["con"].commit()
+    await db.update_welcome(welcome_info)
 
     await ctx.channel.send(embed=embed, hidden=True)

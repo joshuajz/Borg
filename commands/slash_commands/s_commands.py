@@ -8,10 +8,9 @@ from commands.commands import (
     custom_command_remove,
     custom_command_handling,
 )
-from methods.embed import create_embed
 
 
-class Slash_Custom_Commands(commands.Cog):
+class SlashCustomCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -100,4 +99,4 @@ class Slash_Custom_Commands(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(Slash_Custom_Commands(bot))
+    bot.add_cog(SlashCustomCommands(bot))

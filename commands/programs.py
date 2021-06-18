@@ -1,4 +1,4 @@
-import discord
+import discord.ext
 from methods.database import Programs_DB, Guild_DB
 from methods.embed import create_embed, add_field, create_embed_template
 from methods.data import parse_id
@@ -23,7 +23,7 @@ async def programs_add(
         Tuple(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
     """
 
-    db = await Programs_DB(ctx.guild.id)
+
     db_guild = await Guild_DB(ctx.guild.id)
 
     # Channel for verification
@@ -57,7 +57,7 @@ async def programs_add(
 
     add_field(embed, "Program Additions", programs_msg, True)
 
-    # Sends the messsage to the verification channel
+    # Sends the message to the verification channel
     verify_channel = client.get_channel(programs_channel)
     verification_msg = await verify_channel.send(embed=embed)
 
@@ -91,7 +91,7 @@ async def programs_remove(
     if user == ctx.author.id:
         user_id = user
     elif user is not None:
-        if ctx.author.guild_permissions.administrator == False:
+        if ctx.author.guild_permissions.administrator is False:
             return (
                 False,
                 create_embed_template(
@@ -285,7 +285,7 @@ async def programs_edit(
     add_field(embed, "Before", p[before], True)
     add_field(embed, "After", after, True)
 
-    return (True, embed)
+    return True, embed
 
 
 async def programs(ctx, bot, user: str) -> Tuple[bool, discord.Embed]:
@@ -361,21 +361,19 @@ async def programs_setup(
         Tuple[bool, discord.Embed]: [Status: bool, Embed: discord.Embed]
     """
 
-    if ctx.author.guild_permissions.administrator != True:
+    if ctx.author.guild_permissions.administrator is False:
         return
 
     if not channel:
-        return [False, "Invalid channel."]
+        return False, "Invalid channel."
 
     db = await Guild_DB(ctx.guild.id)
     await db.update_settings("programs_channel", channel)
 
-    return (
-        "True",
-        create_embed(
+    return True, create_embed(
             f"Programs Setup Successfully.", f"Channel: <#{channel}>", "light_green"
-        ),
-    )
+        )
+
 
 
 async def programs_reaction_handling(
@@ -391,8 +389,8 @@ async def programs_reaction_handling(
         bool: If it was a programs related reaction
     """
 
-    db = await Programs_DB(ctx.guild_id)
-    db_guild = await Guild_DB(ctx.guild_id)
+    db = await Programs_DB(ctx.guild.id)
+    db_guild = await Guild_DB(ctx.guild.id)
 
     # Grabs the verification channel
     settings = await db_guild.grab_settings()
@@ -401,11 +399,11 @@ async def programs_reaction_handling(
 
     mod_channel_id = settings["programs_channel"]
 
-    if mod_channel_id != ctx.channel_id:
+    if mod_channel_id != ctx.channel.id:
         return False
 
     # Grabs the message & embeds
-    m = await client.get_channel(ctx.channel_id).fetch_message(ctx.message_id)
+    m = await client.get_channel(ctx.channel.id).fetch_message(ctx.message.id)
     embeds = m.embeds[0]
 
     reactions = m.reactions
