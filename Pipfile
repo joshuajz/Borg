@@ -12,7 +12,7 @@ chardet = "==4.0.0"
 discord-py-slash-command = "==1.1.2"
 "discord.py" = "==1.7.2"
 filelock = "==3.0.12"
-idna = "==3.1"
+idna = "==2.5"
 multidict = "==5.1.0"
 python-dotenv = "==0.17.1"
 pytz = "==2021.1"
@@ -22,6 +22,7 @@ urlextract = "==1.2.0"
 yarl = "==1.6.3"
 asyncpg = "*"
 asyncinit = "*"
+requests = "*"
 
 [dev-packages]
 black = {extras = ["d"], version = "==21.6b0"}

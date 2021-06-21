@@ -5,15 +5,16 @@ from asyncinit import asyncinit
 
 
 async def get_credentials():
-    cwd = os.getcwd().split("/")
-    while cwd[-1] != "Borg":
+    while ".env" not in os.listdir():
         try:
             os.chdir("..")
+            if os.getcwd() == "/" or os.getcwd() == "\\":
+                break
+
         except:
             print(
                 "Error moving directories.  Make sure you haven't renamed the folder that Borg resides in."
             )
-            return
 
     load_dotenv()
     port = os.environ.get("database_port")
