@@ -6,10 +6,10 @@ from methods.database import Courses_DB
 
 cwd = os.getcwd().split("/")
 
-while '.env' not in os.listdir():
+while ".env" not in os.listdir():
     try:
         os.chdir("..")
-        if os.getcwd() == '/' or os.getcwd() == '\\':
+        if os.getcwd() == "/" or os.getcwd() == "\\":
             break
 
     except:

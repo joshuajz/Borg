@@ -36,7 +36,10 @@ sudo service postgresql start
 
 1. Install [Python](https://www.python.org/downloads/).
 2. Clone the repository: `git clone https://github.com/joshuajz/Borg`
-3. Open the cloned repository & install the pre-requisites using pip: `pip3 install -r requirements.txt`
+3. Install pipenv `pip3 install pipenv`
+4. Install the project's requirements: **dev version**: `pipenv install --dev` or if you're planning to run Borg as a server, you'll only need: `pipenv install`
+5. If you're developing, you'll now have a virtual environment that you can enable with `pipenv shell`
+
 
 #### Setup a .env file
 A `.env` file should be in your project's directory with the following setup:

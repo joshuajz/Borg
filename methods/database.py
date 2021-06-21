@@ -31,13 +31,19 @@ async def create_database():
     print("Creating Database.")
 
     # Connect to the default database
-    con = await asyncpg.connect(
-        database="postgres",
-        user="postgres",
-        password=password,
-        host="localhost",
-        port=port,
-    )
+    try:
+        con = await asyncpg.connect(
+            database="postgres",
+            user="postgres",
+            password=password,
+            host="localhost",
+            port=port,
+        )
+    except OSError:
+        print("Unable to connect to database.  Did you start your postgresql database?  Stopping the program.")
+        return False
+
+
 
     # Create the Borg database
     try:
