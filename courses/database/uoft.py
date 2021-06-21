@@ -108,6 +108,6 @@ async def place_info(courses: list, db):
             course["name"],
             course["description"],
             requirements=requirements,
-            academic_units=academic_units,
+            units=academic_units,
             campus=campus,
         )

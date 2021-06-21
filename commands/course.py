@@ -56,14 +56,14 @@ async def course_embed(course):
     return embed
 
 
-async def course(ctx, bot, course, school=None):
+async def course(ctx, bot, course_name: str, school=None):
     db = await Courses_DB(school)
 
     if school:
-        course_fetched = await db.fetch_course(course)
+        course_fetched = await db.fetch_course(course_name)
 
         if len(course_fetched) == 0:
-            faculty = grab_faculty(course)
+            faculty = grab_faculty(course_name)
 
             department_fetch = await db.department_exist(faculty)
 
@@ -93,35 +93,39 @@ async def course(ctx, bot, course, school=None):
 
     else:
         # We don't have a school so we're going to need to query every school that we have for that course code
-        results = await db.fetch_courses_all(course=course)
+        results = await db.fetch_courses_all(course=course_name)
 
         if len(results) == 0:
 
-            results = await db.fetch_schools_with_department(course.strip().upper())
-            if results is not None:
+            results = await db.fetch_schools_with_department(
+                course_name.strip().upper()
+            )
+
+            if len(results) >= 1:
                 results = [i[0] for i in results]
                 results = list(dict.fromkeys(results))
 
                 if len(results) == 1:
                     db.school = results[0]
                     courses = await db.fetch_codes_from_department(
-                        grab_faculty(course).upper()
+                        grab_faculty(course_name).upper()
                     )
 
                     courses = [f"**{i['code']}** - *{i['name']}*" for i in courses]
+
                     await page_command(
                         ctx,
                         bot,
                         courses,
-                        f"{results[0].capitalize()} Courses w/ the {course.strip().upper()} department.",
+                        f"{results[0].capitalize()} Courses w/ the {course_name.strip().upper()} department.",
                     )
-            else:
-                await ctx.send(
-                    "You provided a valid department, but multiple schools share that same department name.  Please provide a department and school name.",
-                    hidden=True,
-                )
+                else:
+                    await ctx.send(
+                        "You provided a valid department, but multiple schools share that same department name.  Please provide a department and school name.",
+                        hidden=True,
+                    )
         elif len(results) == 1:
-            embed = await course_embed(course[0])
+            embed = await course_embed(results[list(results.keys())[0]])
             await ctx.send(embed=embed)
         else:
             # Multiple courses provided.

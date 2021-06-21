@@ -36,10 +36,13 @@ async def on_ready():
     """When the bot starts up."""
 
     # Create the database
-    await create_database()
+    result = await create_database()
+
+    if result is False:
+        return
 
     # Pull all of the courses into the database
-    await pull_courses(bot)
+    # await pull_courses(bot)
 
     # Default Settings Check
     guilds_on = [guild.id for guild in bot.guilds]

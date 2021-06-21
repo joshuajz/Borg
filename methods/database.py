@@ -40,10 +40,10 @@ async def create_database():
             port=port,
         )
     except OSError:
-        print("Unable to connect to database.  Did you start your postgresql database?  Stopping the program.")
+        print(
+            "Unable to connect to database.  Did you start your postgresql database?  Stopping the program."
+        )
         return False
-
-
 
     # Create the Borg database
     try:
@@ -377,8 +377,11 @@ class Courses_DB:
         units=None,
         campus=None,
     ):
+        if number is not None:
+            number = int(number)
+
         await self.db.execute(
-            "INSERT INTO courses(school, code, number, department, name, description, requirements, academic_level, units, campus) VALUES ($1, $2, $3, $4, $5, $6, $7, %8, $9, $10)",
+            "INSERT INTO courses VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
             self.school,
             code,
             number,
@@ -503,14 +506,28 @@ class Guild_DB:
 
     async def update_welcome(self, settings: dict):
 
-        check = await self.db.fetchrow("SELECT EXISTS(SELECT guild_id FROM welcome WHERE guild_id = $1)", self.guild_id)
+        check = await self.db.fetchrow(
+            "SELECT EXISTS(SELECT guild_id FROM welcome WHERE guild_id = $1)",
+            self.guild_id,
+        )
 
         if check[0]:
-            await self.db.execute("UPDATE welcome SET channel = $1, message = $2, enabled = $3 WHERE guild_id = $4", settings['channel'], settings['message'], settings['enabled'], self.guild_id)
+            await self.db.execute(
+                "UPDATE welcome SET channel = $1, message = $2, enabled = $3 WHERE guild_id = $4",
+                settings["channel"],
+                settings["message"],
+                settings["enabled"],
+                self.guild_id,
+            )
 
         else:
-            await self.db.execute("INSERT INTO welcome VALUES($1, $2, $3, $4)", self.guild_id, settings['channel'], settings['message'], settings['enabled'])
-
+            await self.db.execute(
+                "INSERT INTO welcome VALUES($1, $2, $3, $4)",
+                self.guild_id,
+                settings["channel"],
+                settings["message"],
+                settings["enabled"],
+            )
 
     async def grab_settings(self) -> dict:
         """Fetches the server's settings.

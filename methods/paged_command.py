@@ -22,7 +22,7 @@ async def page_command(ctx, bot, items: list, title: str):
     # Creates lists splitting every 20 values
     pages_lists = []
     for i in range(0, len(items), 20):
-        pages_lists.append(items[i: i + 20])
+        pages_lists.append(items[i : i + 20])
 
     # If there is only one list, we can just print out the first page and then end
     if len(pages_lists) == 1:
@@ -64,13 +64,13 @@ async def send_page_command(ctx, bot, messages):
 
         return user == ctx.author and str(reaction) in ["◀️", "▶️"]
 
-    msg = await ctx.send(embed=messages[0])
+    msg = await ctx.send(embed=messages[1])
     await msg.add_reaction("◀️")
     await msg.add_reaction("▶️")
 
     # Current page & total amount of pages
-    current_page = 0
-    amount_pages = len(messages) - 1
+    current_page = 1
+    amount_pages = len(messages)
 
     while True:
         try:

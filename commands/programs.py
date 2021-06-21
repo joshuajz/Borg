@@ -23,7 +23,6 @@ async def programs_add(
         Tuple(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
     """
 
-
     db_guild = await Guild_DB(ctx.guild.id)
 
     # Channel for verification
@@ -371,13 +370,12 @@ async def programs_setup(
     await db.update_settings("programs_channel", channel)
 
     return True, create_embed(
-            f"Programs Setup Successfully.", f"Channel: <#{channel}>", "light_green"
-        )
-
+        f"Programs Setup Successfully.", f"Channel: <#{channel}>", "light_green"
+    )
 
 
 async def programs_reaction_handling(
-    ctx: discord.ext.commands.Context, client: discord.ClientUser.bot
+    ctx: discord.RawReactionActionEvent, client: discord.ClientUser.bot
 ) -> bool:
     """Handles Reactions for programs verification
 
@@ -389,8 +387,8 @@ async def programs_reaction_handling(
         bool: If it was a programs related reaction
     """
 
-    db = await Programs_DB(ctx.guild.id)
-    db_guild = await Guild_DB(ctx.guild.id)
+    db = await Programs_DB(ctx.guild_id)
+    db_guild = await Guild_DB(ctx.guild_id)
 
     # Grabs the verification channel
     settings = await db_guild.grab_settings()
