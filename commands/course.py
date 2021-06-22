@@ -1,7 +1,7 @@
-import discord
 from methods.embed import create_embed, add_field
 import json
 import os
+import re
 from methods.database import Courses_DB
 from methods.paged_command import page_command
 
@@ -17,7 +17,7 @@ SCHOOLS = ("queens", "waterloo", "uoft")
 
 async def course_embed(course):
     requirements, academic_level, units, campus = False, False, False, False
-    print(course)
+
     if course["school"] == "queens":
         requirements, academic_level, units = True, True, True
     elif course["school"] == "waterloo":
@@ -61,11 +61,30 @@ async def course_embed(course):
 
 
 async def course(ctx, bot, course_name: str, school=None):
-    print(school)
+    def split_code(code):
+        r = re.compile("([a-zA-Z]+)-([0-9]+)")
+        m = r.match(code)
+        return (code, m.group(1), int(m.group(2)))
+
     db = await Courses_DB(school)
 
     if school:
         course_fetched = await db.fetch_course(course_name)
+        print(course_name[-2::])
+        if len(course_fetched) == 0 and course_name[-2::] in [
+            "H1",
+            "Y1",
+            "H3",
+            "Y3",
+            "H5",
+            "Y5",
+        ]:
+            course_name = course_name[0:-2]
+            course_split = split_code(course_name)
+            print(course_split)
+            course_fetched = await db.fetch_course_split(
+                course_split[1], course_split[2]
+            )
 
         if len(course_fetched) == 0:
             faculty = grab_faculty(course_name)
@@ -99,6 +118,24 @@ async def course(ctx, bot, course_name: str, school=None):
     else:
         # We don't have a school so we're going to need to query every school that we have for that course code
         results = await db.fetch_courses_all(course=course_name)
+
+        print(course_name[-2::])
+        if len(results) == 0 and course_name[-2::] in [
+            "H1",
+            "Y1",
+            "H3",
+            "Y3",
+            "H5",
+            "Y5",
+        ]:
+            course_name = course_name[0:-2]
+            course_split = split_code(course_name)
+            results = await db.fetch_course_split(course_split[1], course_split[2])
+
+        if len(results) == 0:
+            course_split = split_code(course_name)
+            print(course_split)
+            results = await db.fetch_course_split(course_split[1], course_split[2])
 
         if len(results) == 0:
 

@@ -51,7 +51,6 @@ async def create_database():
         await con.execute("""CREATE database borg""")
     except:
         print("Database Already Created.")
-        return await database_connection()
 
     # Connect to the borg database
     con = await database_connection()
@@ -328,22 +327,19 @@ class Courses_DB:
         return result
 
     async def fetch_course(self, course):
-        print(self.school, course)
-        print(
-            await self.db.fetch(
-                "SELECT * FROM courses WHERE code = $1 AND school = $2",
-                "ABP101Y1",
-                "uoft",
-            )
-        )
-        print(course == "ABP101Y1")
-        print(self.school == "uoft")
         result = await self.db.fetch(
             "SELECT * FROM courses WHERE code = $1 AND school = $2",
             course.strip(),
             self.school,
         )
-        print(result)
+        return result
+
+    async def fetch_course_split(self, department, number):
+        result = await self.db.fetch(
+            "SELECT * FROM courses WHERE department = $1 AND number = $2",
+            department,
+            number,
+        )
         return result
 
     async def department_exist(self, department):
@@ -588,7 +584,7 @@ class Guild_DB:
         """
 
         data_pull = await self.db.fetchrow(
-            "SELECT * FROM welcome WHERE user_id = $1", self.guild_id
+            "SELECT * FROM welcome WHERE guild_id = $1", self.guild_id
         )
 
         try:

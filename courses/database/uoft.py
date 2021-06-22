@@ -33,7 +33,7 @@ async def pull_values():
 
 
 async def place_info(courses: list, db):
-    """
+    """['H1', 'Y1', 'H3', 'Y3', 'H5', 'Y5']
     H1 - UTSG half year
     Y1 - UTSG full year
 
@@ -108,3 +108,5 @@ async def place_info(courses: list, db):
             units=academic_units,
             campus=campus,
         )
+
+        in_database.append(code)
