@@ -16,13 +16,14 @@ SCHOOLS = ("queens", "waterloo", "uoft")
 
 
 async def course_embed(course):
-    requirements = None
-
+    requirements, academic_level, units, campus = False, False, False, False
+    print(course)
     if course["school"] == "queens":
         requirements, academic_level, units = True, True, True
     elif course["school"] == "waterloo":
-        requirements, academic_level, units = True, False, False
-    # elif course[0] == 'uoft':
+        requirements = True
+    elif course["school"] == "uoft":
+        requirements, units, campus = True, True, True
 
     embed = create_embed(
         f"{course['code']} - {course['name']}",
@@ -43,20 +44,24 @@ async def course_embed(course):
             if requirements is None:
                 requirements = "Unknown/No Requirements.  Check the university website."
         else:
-            requirements = course[6]
+            requirements = course["requirements"]
 
         add_field(embed, "Requirements", requirements, False)
 
     if academic_level:
-        add_field(embed, "Academic Level", course[7], True)
+        add_field(embed, "Academic Level", course["academic_level"], True)
 
     if units:
-        add_field(embed, "Units", course[8], True)
+        add_field(embed, "Units", course["units"], True)
+
+    if campus:
+        add_field(embed, "Campus", course["campus"], True)
 
     return embed
 
 
 async def course(ctx, bot, course_name: str, school=None):
+    print(school)
     db = await Courses_DB(school)
 
     if school:

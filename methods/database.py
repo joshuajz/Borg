@@ -328,9 +328,22 @@ class Courses_DB:
         return result
 
     async def fetch_course(self, course):
-        result = await self.db.fetch(
-            "SELECT * FROM courses WHERE school = $1 AND code = $2", self.school, course
+        print(self.school, course)
+        print(
+            await self.db.fetch(
+                "SELECT * FROM courses WHERE code = $1 AND school = $2",
+                "ABP101Y1",
+                "uoft",
+            )
         )
+        print(course == "ABP101Y1")
+        print(self.school == "uoft")
+        result = await self.db.fetch(
+            "SELECT * FROM courses WHERE code = $1 AND school = $2",
+            course.strip(),
+            self.school,
+        )
+        print(result)
         return result
 
     async def department_exist(self, department):

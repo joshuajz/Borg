@@ -42,7 +42,7 @@ async def on_ready():
         return
 
     # Pull all of the courses into the database
-    # await pull_courses(bot)
+    await pull_courses(bot)
 
     # Default Settings Check
     guilds_on = [guild.id for guild in bot.guilds]

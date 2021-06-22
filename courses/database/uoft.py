@@ -47,7 +47,7 @@ async def place_info(courses: list, db):
     def split_code(code):
         r = re.compile("([a-zA-Z]+)([0-9]+)")
         m = r.match(code)
-        return (code, m.group(2), m.group(1))
+        return (code, m.group(1), m.group(2), code[-2::])
 
     def get_campus(code):
         end = code[-2::]
@@ -75,36 +75,33 @@ async def place_info(courses: list, db):
         except:
             break
 
-        code = course["code"]
+        code = course_info = split_code(course["code"])
+        code = code[1] + "-" + code[2] + code[3]
 
-        course_info = split_code(code)
-
-        if course["code"] in in_database:
+        if code in in_database:
             continue
 
         requirements = ""
-        if course["prerequisites"] == None:
-            requirements += (
-                "**Requirements**: None (Check the UofT website to be sure.\n"
-            )
+        if course["prerequisites"] is None:
+            requirements += "None (Check the UofT website to be sure.)\n"
         else:
             requirements += f'**Requirements**: {course["prerequisites"]}\n'
 
-        if course["corequisites"] != None:
-            requirements += f'**Corequisites**: {course["corequisites"]}\n'
+        if course["corequisites"] is not None:
+            requirements += f'**Co-requisites**: {course["corequisites"]}\n'
 
-        if course["exclusions"] != None:
+        if course["exclusions"] is not None:
             requirements += f'**Exclusions**: {course["exclusions"]}\n'
 
-        if course["recommended_preparation"] != None:
+        if course["recommended_preparation"] is not None:
             requirements += (
                 f"**Recommended Preparation**: {course['recommended_preparation']}\n"
             )
 
         await db.add_course(
-            course_info[0],
-            int(course_info[1]),
-            course_info[2],
+            code,
+            int(course_info[2]),
+            course_info[1],
             course["name"],
             course["description"],
             requirements=requirements,

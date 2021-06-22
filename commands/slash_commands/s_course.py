@@ -39,15 +39,16 @@ class SlashCourse(commands.Cog):
             course = f"{course[0].upper()}-{course[1]}"
         else:
             final = ""
-            dash = False
-            for i in course:
-                if i.isnumeric() and not dash:
-                    final += "-" + i.upper()
-                    dash = True
-                else:
-                    final += i.upper()
+            if "-" not in course:
+                dash = False
+                for i in course:
+                    if i.isnumeric() and not dash:
+                        final += "-" + i.upper()
+                        dash = True
+                    else:
+                        final += i.upper()
 
-            course = final
+                course = final
 
         await call_course(ctx, self.bot, course, school)
 
