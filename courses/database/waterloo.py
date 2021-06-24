@@ -95,7 +95,7 @@ async def pull_values():
             if len(str(course_number)) == 0:
                 course_number = None
 
-        course_code = course["subjectCode"] + "-" + course["catalogNumber"]
+        course_code = course["subjectCode"] + course["catalogNumber"]
 
         if course_code in in_database:
             continue

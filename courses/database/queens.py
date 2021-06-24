@@ -39,7 +39,7 @@ async def pull_values():
 
 async def place_info(items: list, in_database, db):
     for item in items:
-        course_id = item["id"]
+        course_id = item["id"].replace("-", "")
         course_code = item["course_code"]
         requirements = item["requirements"]
 

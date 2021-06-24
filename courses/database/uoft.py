@@ -76,7 +76,7 @@ async def place_info(courses: list, db):
             break
 
         code = course_info = split_code(course["code"])
-        code = code[1] + "-" + code[2] + code[3]
+        code = code[1] + code[2] + code[3]
 
         if code in in_database:
             continue
