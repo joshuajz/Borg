@@ -21,7 +21,7 @@ async def custom_command_list(
     """
 
     # Database
-    db = await Commands_DB(ctx.guild.id)
+    db = await Commands_DB.init(ctx.guild.id)
 
     # List of commands
     grab_commands = await db.grab_commands()
@@ -126,7 +126,7 @@ async def custom_command_add(
     else:
         urls = None
 
-    db = await Commands_DB(ctx.guild.id)
+    db = await Commands_DB.init(ctx.guild.id)
 
     # Find all of the current commands
     grab_commands = await db.grab_commands()
@@ -182,7 +182,7 @@ async def custom_command_remove(
             ),
         )
 
-    db = await Commands_DB(ctx.guild.id)
+    db = await Commands_DB.init(ctx.guild.id)
 
     # Removes the ! from the command -> !hello turns into hello
     if command[0] == "!":
@@ -234,7 +234,7 @@ async def custom_command_handling(ctx: discord.ext.commands.Context, command: st
         command (str): The command that was called
     """
 
-    db = await Commands_DB(ctx.guild.id)
+    db = await Commands_DB.init(ctx.guild.id)
 
     # List of commands
     command_list = await db.grab_commands()

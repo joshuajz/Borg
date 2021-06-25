@@ -34,23 +34,16 @@ class SlashCourse(commands.Cog):
     )
     async def _course(self, ctx, course, school=None):
         """/course"""
-        if " " in course:
-            course = course.split(" ")
-            course = f"{course[0].upper()}-{course[1]}"
-        else:
-            final = ""
-            if "-" not in course:
-                dash = False
-                for i in course:
-                    if i.isnumeric() and not dash:
-                        final += "-" + i.upper()
-                        dash = True
-                    else:
-                        final += i.upper()
 
-                course = final
+        course = course.replace(" ", "")
 
-        await call_course(ctx, self.bot, course, school)
+        course = course.replace("-", "")
+
+        result = await call_course(ctx, self.bot, course, school)
+        if result[0] is True:
+            await ctx.send(embed=result[1])
+        elif result[0] is False and result[1] is not None:
+            await ctx.send(embed=result[1], hidden=True)
 
 
 def setup(bot):

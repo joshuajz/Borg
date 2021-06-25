@@ -21,7 +21,6 @@ uritools = "==3.0.2"
 urlextract = "==1.2.0"
 yarl = "==1.6.3"
 asyncpg = "*"
-asyncinit = "*"
 requests = "*"
 
 [dev-packages]

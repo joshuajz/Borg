@@ -6,6 +6,7 @@
 **/.env
 **/servers
 **/.venv
+**/.idea
 bot_token.txt
 bot_tokens.txt
 todo.txt

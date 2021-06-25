@@ -63,7 +63,7 @@ async def get_course(course, term=get_term()):
 
 async def pull_values():
     courses = await get_courses()
-    db = await Courses_DB("waterloo")
+    db = await Courses_DB.init("waterloo")
 
     def pull_numbers(string):
         final = ""

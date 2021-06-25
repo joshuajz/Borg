@@ -1,4 +1,4 @@
-from methods.embed import create_embed, add_field
+from methods.embed import create_embed, add_field, create_embed_template
 import json
 import os
 import re
@@ -62,38 +62,32 @@ async def course_embed(course):
 
 async def course(ctx, bot, course_name: str, school=None):
     def split_code(code):
-        r = re.compile("([a-zA-Z]+)-([0-9]+)")
-        m = r.match(code)
-        return (code, m.group(1), int(m.group(2)))
+        m = re.compile("([a-zA-z]+)([0-9]+)?([H|Y][1|3|5])?")
+        m = m.match(code)
+        return {
+            "code": m.group(0),
+            "department": m.group(1),
+            "number": m.group(2),
+            "uoft": m.group(3),
+        }
 
-    db = await Courses_DB(school)
+    db = await Courses_DB.init(school)
+    course_split = split_code(course_name)
 
     if school:
-        course_fetched = await db.fetch_course(course_name)
-        print(course_name[-2::])
-        if len(course_fetched) == 0 and course_name[-2::] in [
-            "H1",
-            "Y1",
-            "H3",
-            "Y3",
-            "H5",
-            "Y5",
-        ]:
-            course_name = course_name[0:-2]
-            course_split = split_code(course_name)
-            print(course_split)
+        if course_split["uoft"]:
             course_fetched = await db.fetch_course_split(
-                course_split[1], course_split[2]
+                course_split["department"], course_split["number"]
             )
+        else:
+            course_fetched = await db.fetch_course(course_name)
 
         if len(course_fetched) == 0:
-            faculty = grab_faculty(course_name)
+            department = course_split["department"]
+            department_fetch = await db.department_exist(department)
 
-            department_fetch = await db.department_exist(faculty)
-
-            # Check to see if a proper faculty was provided
             if department_fetch:
-                codes = await db.fetch_codes_from_department(faculty)
+                codes = await db.fetch_codes_from_department(department)
 
                 multiple_courses = [f"**{i['code']}** - *{i['name']}*" for i in codes]
                 multiple_courses.sort()
@@ -102,73 +96,65 @@ async def course(ctx, bot, course_name: str, school=None):
                     ctx,
                     bot,
                     multiple_courses,
-                    f"{school.capitalize()} Courses w/ the {faculty} department.",
+                    f"{school.capitalize()} Courses w/ the {department} department.",
                 )
-            else:
-                embed = create_embed(
-                    "Invalid Course Code",
-                    "The course code you provided was invalid, and I couldn't find any courses in that department.",
-                    "cyan",
-                )
-                await ctx.send(embed=embed, hidden=True)
+
+                return True, None
         elif len(course_fetched) == 1:
             embed = await course_embed(course_fetched[0])
-            await ctx.send(embed=embed)
-
+            return True, embed
     else:
-        # We don't have a school so we're going to need to query every school that we have for that course code
-        results = await db.fetch_courses_all(course=course_name)
-
-        print(course_name[-2::])
-        if len(results) == 0 and course_name[-2::] in [
-            "H1",
-            "Y1",
-            "H3",
-            "Y3",
-            "H5",
-            "Y5",
-        ]:
-            course_name = course_name[0:-2]
-            course_split = split_code(course_name)
-            results = await db.fetch_course_split(course_split[1], course_split[2])
-
-        if len(results) == 0:
-            course_split = split_code(course_name)
-            print(course_split)
-            results = await db.fetch_course_split(course_split[1], course_split[2])
-
-        if len(results) == 0:
-
-            results = await db.fetch_schools_with_department(
-                course_name.strip().upper()
+        if course_split["uoft"]:
+            fetch_course = await db.fetch_course_split(
+                course_split["department"], course_split["number"]
             )
 
-            if len(results) >= 1:
-                results = [i[0] for i in results]
-                results = list(dict.fromkeys(results))
+        results = await db.fetch_courses_all(course=course_name)
 
-                if len(results) == 1:
-                    db.school = results[0]
-                    courses = await db.fetch_codes_from_department(
-                        grab_faculty(course_name).upper()
-                    )
-
-                    courses = [f"**{i['code']}** - *{i['name']}*" for i in courses]
-
-                    await page_command(
-                        ctx,
-                        bot,
-                        courses,
-                        f"{results[0].capitalize()} Courses w/ the {course_name.strip().upper()} department.",
-                    )
-                else:
-                    await ctx.send(
-                        "You provided a valid department, but multiple schools share that same department name.  Please provide a department and school name.",
-                        hidden=True,
-                    )
-        elif len(results) == 1:
+        if len(results) == 1:
             embed = await course_embed(results[list(results.keys())[0]])
-            await ctx.send(embed=embed)
+            return True, embed
+
+        if len(results) == 0:
+            schools_with_department = await db.fetch_schools_with_department(
+                course_split["department"]
+            )
+
+        if course_split["uoft"] and len(results) == 0:
+            results = await db.fetch_course_split(
+                course_split["department"], course_split["number"]
+            )
+            # else:
+            #     results = await db.fetch_schools_with_department(
+            #         course_split["department"]
+            #     )
+        elif len(results) == 0:
+            results = await db.fetch_schools_with_department(course_split["department"])
+
+        if len(results) == 1:
+            results = [i[0] for i in results]
+            results = list(dict.fromkeys(results))
+
+            if len(results) == 1:
+                db.school = results[0]
+                courses = await db.fetch_codes_from_department(
+                    grab_faculty(course_name).upper()
+                )
+
+                courses = [f"**{i['code']}** - *{i['name']}*" for i in courses]
+
+                await page_command(
+                    ctx,
+                    bot,
+                    courses,
+                    f"{results[0].capitalize()} Courses with the {course_name.strip().upper()} department.",
+                )
+            else:
+                return False, create_embed_template(
+                    "Valid Department -> Multiple Schools",
+                    "You provided a valid department, but multiple schools share that same department name.  Please provide a department and school name.",
+                    "error",
+                )
         else:
             # Multiple courses provided.
             courses = [f"{i[0].capitalize()}: {i[1]}" for i in results]

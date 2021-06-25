@@ -1,7 +1,6 @@
 import asyncpg
 from dotenv import load_dotenv
 import os
-from asyncinit import asyncinit
 
 
 async def get_credentials():
@@ -126,14 +125,18 @@ async def database_connection():
     return con
 
 
-@asyncinit
 class Programs_DB:
-    async def __init__(self, guild_id: int):
+    @classmethod
+    async def init(cls, guild_id: int):
         """Initalizes self.guild_id & a database connection."""
+        self = Programs_DB()
+
         self.guild_id = guild_id
 
         # Grab a database connection
         self.db = await database_connection()
+
+        return self
 
     async def grab_programs(self, user_id: int) -> str:
         """Grabs all of a user's programs
@@ -179,14 +182,18 @@ class Programs_DB:
         )
 
 
-@asyncinit
 class Roles_DB:
-    async def __init__(self, guild_id: int):
+    @classmethod
+    async def init(cls, guild_id: int):
         """Initalizes self.guild_id & a database connection."""
+        self = Roles_DB()
+
         self.guild_id = guild_id
 
         # Grab a database connection
         self.db = await database_connection()
+
+        return self
 
     async def grab_roles(self) -> list:
         """Provides all of the roles on a server.
@@ -302,16 +309,14 @@ class Roles_DB:
                 print(e)
 
 
-@asyncinit
 class Courses_DB:
-    async def __init__(self, school):
-        """Initalizes self.guild_id & a database connection."""
-        self.school = school
-
-        # Grab a database connection
-        self.db = await database_connection()
-
+    @classmethod
+    async def init(cls, school):
+        self = Courses_DB()
         self.SCHOOLS = ("queens", "uoft", "waterloo")
+        self.school = school
+        self.db = await database_connection()
+        return self
 
     async def fetch_school(self, department):
         return await self.db.fetch(
@@ -405,14 +410,17 @@ class Courses_DB:
         )
 
 
-@asyncinit
 class Commands_DB:
-    async def __init__(self, guild_id: int):
+    @classmethod
+    async def init(cls, guild_id: int):
         """Initalizes self.guild_id & a database connection."""
+        self = Commands_DB()
         self.guild_id = guild_id
 
         # Grab a database connection
         self.db = await database_connection()
+
+        return self
 
     async def grab_commands(self) -> list:
         """Fetches all of the commands for the server.
@@ -503,16 +511,20 @@ class Commands_DB:
         )
 
 
-@asyncinit
 class Guild_DB:
     """The Guild_Info class.  Provides all of the functions required for dealing with the Borg database."""
 
-    async def __init__(self, guild_id: int):
+    @classmethod
+    async def init(cls, guild_id: int):
         """Initalizes self.guild_id & a database connection."""
+        self = Guild_DB()
+
         self.guild_id = guild_id
 
         # Grab a database connection
         self.db = await database_connection()
+
+        return self
 
     async def update_welcome(self, settings: dict):
 

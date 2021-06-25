@@ -21,7 +21,7 @@ async def get_info(offset=0):
 
 
 async def pull_values():
-    db = await Courses_DB("queens")
+    db = await Courses_DB.init("queens")
 
     courses = await db.fetch_courses()
 

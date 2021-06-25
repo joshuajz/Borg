@@ -21,7 +21,7 @@ async def role_toggle(
     # Grab the user's roles
     user_roles = [i.id for i in ctx.author.roles]
 
-    db = await Roles_DB(ctx.guild.id)
+    db = await Roles_DB.init(ctx.guild.id)
 
     # Grab this server's role commands
     role_id = await db.grab_role(command=role)
@@ -90,7 +90,7 @@ async def roles(
         Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
     """
 
-    db = await Roles_DB(ctx.guild.id)
+    db = await Roles_DB.init(ctx.guild.id)
 
     try:
         all_roles = [
@@ -140,7 +140,7 @@ async def add_role(ctx: discord.ext.commands.Context, name: str, role_id: int):
             ),
         )
 
-    db = await Roles_DB(ctx.guild.id)
+    db = await Roles_DB.init(ctx.guild.id)
 
     if await db.check_role(role_id, name):
         for role in ctx.guild.roles:
@@ -197,7 +197,7 @@ async def remove_role(ctx, role_id: int):
             ),
         )
 
-    db = await Roles_DB(ctx.guild.id)
+    db = await Roles_DB.init(ctx.guild.id)
 
     removal_role = await db.grab_role(role_id=role_id)
 

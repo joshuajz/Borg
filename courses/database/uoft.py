@@ -18,7 +18,7 @@ async def get_info(offset=0):
 
 
 async def pull_values():
-    db = await Courses_DB("uoft")
+    db = await Courses_DB.init("uoft")
 
     offset = 0
     while True:

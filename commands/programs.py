@@ -23,7 +23,7 @@ async def programs_add(
         Tuple(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
     """
 
-    db_guild = await Guild_DB(ctx.guild.id)
+    db_guild = await Guild_DB.init(ctx.guild.id)
 
     # Channel for verification
     settings = await db_guild.grab_settings()
@@ -105,7 +105,7 @@ async def programs_remove(
     else:
         user_id = ctx.author.id
 
-    db = await Programs_DB(ctx.guild.id)
+    db = await Programs_DB.init(ctx.guild.id)
 
     # Deletes ALL the programs
     if programs.lower() in ["*", "all"]:
@@ -229,8 +229,8 @@ async def programs_edit(
 
     user = parse_id(user)
 
-    db = await Programs_DB(ctx.guild.id)
-    db_guild = await Guild_DB(ctx.guild.id)
+    db = await Programs_DB.init(ctx.guild.id)
+    db_guild = await Guild_DB.init(ctx.guild.id)
 
     # Channel for verification
     settings = await db_guild.grab_settings()
@@ -309,7 +309,7 @@ async def programs(ctx, bot, user: str) -> Tuple[bool, discord.Embed]:
     # Gets the user's id
     user = parse_id(user)
 
-    db = await Programs_DB(ctx.guild.id)
+    db = await Programs_DB.init(ctx.guild.id)
 
     # Grabs all of the programs
     programs_list = await db.grab_programs(user)
@@ -366,7 +366,7 @@ async def programs_setup(
     if not channel:
         return False, "Invalid channel."
 
-    db = await Guild_DB(ctx.guild.id)
+    db = await Guild_DB.init(ctx.guild.id)
     await db.update_settings("programs_channel", channel)
 
     return True, create_embed(
@@ -387,8 +387,8 @@ async def programs_reaction_handling(
         bool: If it was a programs related reaction
     """
 
-    db = await Programs_DB(ctx.guild_id)
-    db_guild = await Guild_DB(ctx.guild_id)
+    db = await Programs_DB.init(ctx.guild_id)
+    db_guild = await Guild_DB.init(ctx.guild_id)
 
     # Grabs the verification channel
     settings = await db_guild.grab_settings()

@@ -42,17 +42,17 @@ async def on_ready():
         return
 
     # Pull all of the courses into the database
-    await pull_courses(bot)
+    # await pull_courses(bot)
 
     # Default Settings Check
     guilds_on = [guild.id for guild in bot.guilds]
-    database = await Guild_DB(0)
+    database = await Guild_DB.init(0)
     guilds_db = await database.db.fetch("SELECT guild_id FROM settings")
     guilds_db = [i[0] for i in guilds_db]
 
     for guild in guilds_on:
         if guild not in guilds_db:
-            await (await Guild_DB(guild)).create_default_settings()
+            await (await Guild_DB.init(guild)).create_default_settings()
 
     print(f"Logged in as {bot.user}.")
 
@@ -110,7 +110,7 @@ async def on_member_join(member: discord.Member):
 async def on_guild_join(guild: discord.Guild):
     """When the bot joins a guild."""
 
-    await (await Guild_DB(guild.id)).create_default_settings()
+    await (await Guild_DB.init(guild.id)).create_default_settings()
 
 
 # Load the various commands

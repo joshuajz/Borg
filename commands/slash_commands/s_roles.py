@@ -105,7 +105,7 @@ class SlashRoles(commands.Cog):
         if role_name is not None:
             if role_name[0] == "!":
                 role_name = role[1::]
-            actual_role = await (await Roles_DB(ctx.guild.id)).grab_role(
+            actual_role = await (await Roles_DB.init(ctx.guild.id)).grab_role(
                 command=role_name
             )
             actual_role = actual_role["role_id"]
