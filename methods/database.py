@@ -10,10 +10,11 @@ async def get_credentials():
             if os.getcwd() == "/" or os.getcwd() == "\\":
                 break
 
-        except:
+        except Exception as e:
             print(
                 "Error moving directories.  Make sure you haven't renamed the folder that Borg resides in."
             )
+            print(e)
 
     load_dotenv()
     port = os.environ.get("database_port")
@@ -47,9 +48,10 @@ async def create_database():
 
     # Create the Borg database
     try:
-        await con.execute("""CREATE database borg""")
-    except:
+        await con.execute("CREATE database borg")
+    except Exception as e:
         print("Database Already Created.")
+        print(e)
 
     # Connect to the borg database
     con = await database_connection()
@@ -125,501 +127,712 @@ async def database_connection():
     return con
 
 
-class Programs_DB:
-    @classmethod
-    async def init(cls, guild_id: int):
-        """Initalizes self.guild_id & a database connection."""
-        self = Programs_DB()
+async def program_grab(
+    user_id: int, guild_id: int, db: asyncpg.Connection
+) -> str or None:
+    """Return's a user's programs.
 
-        self.guild_id = guild_id
+    Args:
+        user_id (int): User's ID
+        guild_id (int): Guild's ID
+        db (asyncpg.Connection): Database Connection
 
-        # Grab a database connection
-        self.db = await database_connection()
+    Returns:
+        str or None: Provides either the programs or None
+    """
 
-        return self
+    programs_response = await db.fetchrow(
+        "SELECT description FROM programs WHERE guild_id = $1 AND user_id = $2",
+        guild_id,
+        user_id,
+    )
 
-    async def grab_programs(self, user_id: int) -> str:
-        """Grabs all of a user's programs
-
-        Args:
-            user_id (int): The user's ID
-
-        Returns:
-            str or None: None if the user has no programs.  A string containing all of the programs.  \n Seperated
-        """
-
-        programs_response = await self.db.fetchrow(
-            "SELECT description FROM programs WHERE guild_id = $1 AND user_id = $2",
-            self.guild_id,
-            user_id,
-        )
-
-        try:
-            return programs_response[0]
-        except:
-            return None
-
-    async def update_programs(self, user_id, new_programs):
-        await self.db.execute(
-            "UPDATE programs SET description = $1 WHERE guild_id = $2 AND user_id = $3",
-            new_programs,
-            self.guild_id,
-            user_id,
-        )
-
-    async def check_programs_exists(self, user_id):
-        count = await self.db.fetchrow(
-            "SELECT COUNT(user_id) FROM programs WHERE guild_id = $1 AND user_id = $2",
-            self.guild_id,
-            user_id,
-        )
-
-        return count[0]
-
-    async def add_programs(self, user_id, programs):
-        await self.db.execute(
-            "INSERT INTO programs VALUES ($1, $2, $3)", self.guild_id, user_id, programs
-        )
+    if programs_response:
+        return programs_response[0]
+    else:
+        return None
 
 
-class Roles_DB:
-    @classmethod
-    async def init(cls, guild_id: int):
-        """Initalizes self.guild_id & a database connection."""
-        self = Roles_DB()
+async def program_update(
+    user_id: int, guild_id: int, new_programs: str, db: asyncpg.Connection
+):
+    """Update a user's programs.
 
-        self.guild_id = guild_id
+    Args:
+        user_id (int): User's ID
+        guild_id (int): Guild's ID
+        new_programs (str): New Programs
+        db (asyncpg.Connection): Database Connection
+    """
 
-        # Grab a database connection
-        self.db = await database_connection()
+    await db.execute(
+        "UPDATE programs SET description = $1 WHERE guild_id = $2 AND user_id = $3",
+        new_programs,
+        guild_id,
+        user_id,
+    )
 
-        return self
 
-    async def grab_roles(self) -> list:
-        """Provides all of the roles on a server.
+async def program_check_exist(
+    user_id: int, guild_id: int, db: asyncpg.Connection
+) -> bool:
+    """Checks to see if a user has a programs instance.
 
-        Returns:
-            None or list: Provides None if there are no roles otherwise a List of Tuples:
-                (
-                    role_id (int), # The role's ID
-                    command (str) # The denominator to call the command
-                )
-        """
+    Args:
+        user_id (int): User's ID
+        guild_id (int): Guild's ID
+        db (asyncpg.Connection): Database Connection
 
-        roles = await self.db.fetch(
-            "SELECT role_id, command FROM command_roles WHERE guild_id = $1",
-            self.guild_id,
-        )
+    Returns:
+        bool: Whether a programs instance exists for the user
+    """
 
-        try:
-            return roles
-        except:
-            return None
+    result = await db.fetchrow(
+        "SELECT COUNT(user_id) FROM programs WHERE guild_id = $1 AND user_id = $2",
+        guild_id,
+        user_id,
+    )
+    return False if result[0] == 0 else True
 
-    async def grab_role(self, command=None, role_id=None) -> tuple:
-        """Fetches a specific role.
 
-        Args:
-            command (str, optional): The command to call the role. Defaults to None.
-            role_id (int, optional): The role's actual ID. Defaults to None.
+async def program_add(
+    user_id: int, guild_id: int, programs: str, db: asyncpg.Connection
+):
+    """Add a programs instance.
 
-        Returns:
-            None or Tuple: Provides None if there isn't a role otherwise a Tuple:
-                (
-                    guild_id (int), # The guild's ID
-                    role_id (int), # The ID of the role to add
-                    command (str) # The command that will toggle that role
-                )
-        """
-        if command:
-            command_response = await self.db.fetchrow(
-                "SELECT * FROM command_roles WHERE guild_id = $1 AND command = $2",
-                self.guild_id,
-                command,
+    Args:
+        user_id (int): User's ID
+        guild_id (int): Guild's ID
+        programs (str): Programs String
+        db (asyncpg.Connection): Database Connection
+    """
+
+    await db.execute(
+        "INSERT INTO programs VALUES ($1, $2, $3)", guild_id, user_id, programs
+    )
+
+
+async def program_delete(guild_id: int, user_id: int, db: asyncpg.Connection):
+    """Removes a user's programs instance
+
+    Args:
+        guild_id (int): The Guild's ID
+        user_id (int): The User's ID
+        db (asyncpg.Connection): Database Connection
+    """
+    await db.execute(
+        "DELETE FROM programs WHERE guild_id = $1 AND user_id = $2",
+        guild_id,
+        user_id,
+    )
+
+
+async def program_update(
+    guild_id: int, user_id: int, message: str, db: asyncpg.Connection
+):
+    """Updates a user's programs instance
+
+    Args:
+        guild_id (int): The Guild's ID
+        user_id (int): The User's ID
+        message (int): The new message
+        db (asyncpg.Connection): Database Connection
+    """
+    await db.execute(
+        "UPDATE programs SET description = $1 WHERE guild_id = $2 AND user_id = $3",
+        message,
+        guild_id,
+        user_id,
+    )
+
+
+async def role_grab(guild_id, db) -> list:
+    """Provides all of the classic roles on a server.
+
+    Args:
+        guild_id (int): Guild's ID
+        db (asyncpg.Connection): Database Connection
+
+    Returns:
+        list: Provides an empty list or a list of asyncpg.Record
+            (
+                role_id (int): Role's ID
+                command (str): The command to toggle the role
             )
+    """
 
-            return command_response
+    roles = await db.fetch(
+        "SELECT role_id, command FROM command_roles WHERE guild_id = $1",
+        guild_id,
+    )
 
-        elif role_id:
+    return roles
 
-            command_response = await self.db.fetchrow(
-                "SELECT * FROM command_roles WHERE guild_id = $1 AND role_id = $2",
-                self.guild_id,
-                role_id,
+
+async def role_find(
+    guild_id: int, db: asyncpg.Connection, command=None, role_id=None
+) -> asyncpg.Record:
+    """Finds a role based off of a command or role_id
+
+    Args:
+        guild_id (int): Guild's ID
+        db (asyncpg.Connection): Database Connection
+        command (str): The command that toggles the role
+        role_id (int): The role's ID
+
+    Returns:
+        None or asyncpg.Record: Provides None (no role) or a asyncpg.Record
+            (
+                guild_id (int): Guild's ID
+                role_id (int): Role's ID
+                command (str): The command that toggles the role
             )
+    """
 
-            return command_response
-
-    async def check_role(self, role_id: int, command: str) -> bool:
-        """Checks to see if a role exists when adding a new role to the database.
-
-        Args:
-            role_id (int): The actual role's ID
-            command (str): The command to call the role
-
-        Returns:
-            bool or None: Will return True if these values exist in the database, otherwise will return False.
-        """
-
-        role_response = await self.db.fetchrow(
-            "SELECT EXISTS(SELECT * FROM command_roles WHERE guild_id = $1 AND (role_id = $2 OR command = $3))",
-            self.guild_id,
-            role_id,
+    if command:
+        command_response = await db.fetchrow(
+            "SELECT * FROM command_roles WHERE guild_id = $1 AND command = $2",
+            guild_id,
             command,
         )
 
-        return not (role_response["exists"])
+        return command_response
 
-    async def add_role(self, role_id, command):
-        """Adds a role to the database
+    elif role_id:
 
-        Args:
-            role_id (int): The actual role's id
-            command (str): The command to call the role
-        """
-
-        async with self.db.transaction():
-            try:
-                await self.db.execute(
-                    "INSERT INTO command_roles VALUES ($1, $2, $3)",
-                    self.guild_id,
-                    role_id,
-                    command,
-                )
-
-            except Exception as e:
-                print(e)
-
-    async def remove_role(self, role_id):
-        """Removes a role from the database
-
-        Args:
-            role_id (int): The role's ID
-        """
-
-        async with self.db.transaction():
-            try:
-                await self.db.execute(
-                    "DELETE FROM command_roles WHERE guild_id = $1 AND role_id = $2",
-                    self.guild_id,
-                    role_id,
-                )
-
-            except Exception as e:
-                print(e)
-
-
-class Courses_DB:
-    @classmethod
-    async def init(cls, school):
-        self = Courses_DB()
-        self.SCHOOLS = ("queens", "uoft", "waterloo")
-        self.school = school
-        self.db = await database_connection()
-        return self
-
-    async def fetch_school(self, department):
-        return await self.db.fetch(
-            "SELECT school FROM courses WHERE department = $1", department
+        command_response = await db.fetchrow(
+            "SELECT * FROM command_roles WHERE guild_id = $1 AND role_id = $2",
+            guild_id,
+            role_id,
         )
 
-    async def fetch_codes_from_department(self, department):
-        result = await self.db.fetch(
-            "SELECT code, name FROM courses WHERE school = $1 AND department = $2",
-            self.school,
-            department.strip().upper(),
-        )
-        return result
+        return command_response
 
-    async def fetch_course(self, course):
-        result = await self.db.fetch(
-            "SELECT * FROM courses WHERE code = $1 AND school = $2",
-            course.strip(),
-            self.school,
-        )
-        return result
 
-    async def fetch_course_split(self, department, number):
-        result = await self.db.fetch(
-            "SELECT * FROM courses WHERE department = $1 AND number = $2",
-            department,
-            number,
-        )
-        return result
+async def role_check(
+    guild_id: int, role_id: int, command: str, db: asyncpg.Connection
+) -> bool:
+    """Check to see if a role exists
 
-    async def department_exist(self, department):
-        result = await self.db.fetchrow(
-            "SELECT EXISTS(SELECT department FROM courses WHERE school = $1 AND department = $2)",
-            self.school,
-            department,
-        )
-        return result[0]
+    Args:
+        guild_id (int): Guild's ID
+        role_id (int): Role's ID
+        command (str): The command that toggles the role
+        db (asyncpg.Connection): Database Connection
 
-    async def fetch_schools_with_department(self, department):
-        return await self.db.fetch(
-            "SELECT school FROM courses WHERE department = $1", department
-        )
+    Returns:
+        bool: Whether the role exists
+    """
 
-    async def fetch_courses(self):
-        raw = await self.db.fetch(
-            "SELECT code FROM courses WHERE school = $1", self.school
-        )
-        codes = [i[0] for i in raw]
+    role_response = await db.fetchrow(
+        "SELECT EXISTS(SELECT * FROM command_roles WHERE guild_id = $1 AND (role_id = $2 OR command = $3))",
+        guild_id,
+        role_id,
+        command,
+    )
 
-        return codes
+    return not (role_response["exists"])
 
-    async def fetch_courses_all(self, course):
-        results = {}
-        for school in self.SCHOOLS:
-            r = await self.db.fetchrow(
-                "SELECT * FROM courses WHERE school = $1 AND code = $2", school, course
+
+async def role_add(guild_id: int, role_id: int, command: str, db: asyncpg.Connection):
+    """Add a role to the database
+
+    Args:
+        guild_id (int): Guild's ID
+        role_id (int): Role's ID
+        command (str): The command that toggles the role
+        db (asyncpg.Connection): Database Connection
+    """
+
+    async with db.transaction():
+        try:
+            await db.execute(
+                "INSERT INTO command_roles VALUES ($1, $2, $3)",
+                guild_id,
+                role_id,
+                command,
             )
 
-            if r:
-                results[school] = r
+        except Exception as e:
+            print(e)
 
-        return results
 
-    async def add_course(
-        self,
+async def role_remove(guild_id: int, role_id: int, db: asyncpg.Connection):
+    """Remove a role from the database
+
+    Args:
+        guild_id (int): Guild's ID
+        role_id (int): Role's ID
+        db (asyncpg.Connection): Database Connection
+    """
+
+    async with db.transaction():
+        try:
+            await db.execute(
+                "DELETE FROM command_roles WHERE guild_id = $1 AND role_id = $2",
+                guild_id,
+                role_id,
+            )
+        except Exception as e:
+            print(e)
+
+
+async def course_department_with_school(
+    department: str, db: asyncpg.Connection
+) -> list:
+    """Determine which schools have a department with the specified name
+
+    Args:
+        department (str): Department
+        db (asyncpg.Connection): Database Connection
+
+    Returns:
+        list: A list containing string(s) with the name of the schools
+    """
+
+    schools = await db.fetch(
+        "SELECT school FROM courses WHERE department = $1", department
+    )
+    schools = list(dict.fromkeys([i["school"] for i in schools]))
+    return schools
+
+
+async def course_codes_department(
+    school: str, department: str, db: asyncpg.Connection
+) -> list:
+    """Fetch course codes given a department and a school
+
+    Args:
+        school (str): The school
+        department (str): The department
+        db (asyncpg.Connection): Database Connection
+
+    Returns:
+        list: A list of asyncpg.Record
+            (
+                code (str): The course code
+                name (str): The name of the course
+            )
+    """
+
+    return await db.fetch(
+        "SELECT code, name FROM courses WHERE school = $1 AND department = $2",
+        school,
+        department.strip().upper(),
+    )
+
+
+async def course_fetch(school: str, course: str, db: asyncpg.Connection):
+    """Fetch a course from a course code & school
+
+    Args:
+        school (str): The school
+        course (str): The course code
+        db (asyncpg.Connection): Database Connection
+
+    Returns:
+        list: A list of asyncpg.Record
+            (
+                school (str): The school
+                code (str): The course code
+                number (int): The course's number
+                department (str): The department
+                name (str): Name of the course
+                description (str): Description of the course
+                requirements (str): Requirements to take the course
+                academic_level (str): The academic level of the course
+                units (float): The units of the course
+                campus (str): The campus
+            )
+    """
+    return await db.fetch(
+        "SELECT * FROM courses WHERE code = $1 AND school = $2",
+        course.strip(),
+        school,
+    )
+
+
+async def course_fetch_split(department: str, number: int, db: asyncpg.Connection):
+    """Fetch a course given a department & course number
+
+    Args:
+        department (str): The department
+        number (int): The course's number
+        db (asyncpg.Connection): Database Connection
+
+    Returns:
+        list: A list of asyncpg.Record
+            (
+                school (str): The school
+                code (str): The course code
+                number (int): The course's number
+                department (str): The department
+                name (str): Name of the course
+                description (str): Description of the course
+                requirements (str): Requirements to take the course
+                academic_level (str): The academic level of the course
+                units (float): The units of the course
+                campus (str): The campus
+            )
+    """
+    return await db.fetch(
+        "SELECT * FROM courses WHERE department = $1 AND number = $2",
+        department,
+        number,
+    )
+
+
+async def course_department_exist(
+    school: str, department: str, db: asyncpg.Connection
+) -> bool:
+    """Determines if a department exists @ a school
+
+    Args:
+        school (str): The school
+        department (str): The department
+        db (asyncpg.Connection): Database Connection
+
+    Returns:
+        bool: Whether the department exists
+    """
+
+    result = await db.fetchrow(
+        "SELECT EXISTS(SELECT department FROM courses WHERE school = $1 AND department = $2)",
+        school,
+        department,
+    )
+
+    return result["exists"]
+
+
+async def course_fetch_school(school: str, db: asyncpg.Connection) -> list:
+    """Fetches all of the course codes at a school
+
+    Args:
+        school (str): The school
+        db (asyncpg.Connection): Database Connection
+
+    Returns:
+        list: A list of course codes (str)
+    """
+    raw = await db.fetch("SELECT code FROM courses WHERE school = $1", school)
+    codes = [i[0] for i in raw]
+
+    return codes
+
+
+async def course_fetch_all(course: str, db: asyncpg.Connection) -> dict:
+    """Determines all of the schools where a course exists
+
+    Args:
+        course (str): A course code
+        db (asyncpg.Connection): Database Connection
+
+    Returns:
+        dict: Contains key (school) value (asyncpg.Record) pairs.  asyncpg.Record:
+            (
+                school (str): The school
+                code (str): The course code
+                number (int): The course's number
+                department (str): The department
+                name (str): Name of the course
+                description (str): Description of the course
+                requirements (str): Requirements to take the course
+                academic_level (str): The academic level of the course
+                units (float): The units of the course
+                campus (str): The campus
+            )
+    """
+
+    schools = ("queens", "uoft", "waterloo")
+    results = {}
+    for school in schools:
+        r = await db.fetchrow(
+            "SELECT * FROM courses WHERE school = $1 AND code = $2", school, course
+        )
+
+        if r:
+            results[school] = r
+
+    return results
+
+
+async def course_add(
+    db: asyncpg.Connection,
+    school: str,
+    code: str,
+    number: int,
+    department: str,
+    name: str,
+    description: str,
+    requirements=None,
+    academic_level=None,
+    units=None,
+    campus=None,
+):
+    """Add a course to the database
+
+    Args:
+        db (asyncpg.Connection): Database Connection
+        school (str): School
+        code (str): Course code
+        number (int): Course number
+        department (str): Course's department
+        name (str): The Course's name
+        description (str): The Course's description
+        requirements (str): The Course's requirements
+        academic_level (str): The academic level of the course (ie. undergrad, grad)
+        units (float): The amount of units the course provides
+        campus (str): The campus
+    """
+    if number is not None:
+        number = int(number)
+
+    await db.execute(
+        "INSERT INTO courses VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+        school,
         code,
         number,
         department,
         name,
         description,
-        requirements=None,
-        academic_level=None,
-        units=None,
-        campus=None,
-    ):
-        if number is not None:
-            number = int(number)
-
-        await self.db.execute(
-            "INSERT INTO courses VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
-            self.school,
-            code,
-            number,
-            department,
-            name,
-            description,
-            requirements,
-            academic_level,
-            units,
-            campus,
-        )
+        requirements,
+        academic_level,
+        units,
+        campus,
+    )
 
 
-class Commands_DB:
-    @classmethod
-    async def init(cls, guild_id: int):
-        """Initalizes self.guild_id & a database connection."""
-        self = Commands_DB()
-        self.guild_id = guild_id
+async def commands_grab(guild_id: int, db: asyncpg.Connection) -> list or False:
+    """Fetches all of the commands for the server.
 
-        # Grab a database connection
-        self.db = await database_connection()
+    Args:
+        guild_id (int): The Guild's ID
+        db (asyncpg.Connection): Database Connection
 
-        return self
+    Returns:
+        list or None: None if there are no commands otherwise a List of Tuples:
+            (
+                command (str), # The name or denominator for the command
+                output (str), # The output message of the command
+                image (None or str) # A link to an image to embed in the command
+            )
+    """
+    commands = []
 
-    async def grab_commands(self) -> list:
-        """Fetches all of the commands for the server.
+    commands_db = await db.fetch(
+        "SELECT command, output, image FROM custom_commands WHERE guild_id = $1",
+        guild_id,
+    )
 
-        Returns:
-            list or None: None if there are no commands otherwise a List of Tuples:
-                (
-                    command (str), # The name or denominator for the command
-                    output (str), # The output message of the command
-                    image (None or str) # A link to an image to embed in the command
-                )
-        """
-        commands = []
+    for c in commands_db:
+        commands.append((c[0], c[1], c[2]))
 
-        commands_db = await self.db.fetch(
-            "SELECT command, output, image FROM custom_commands WHERE guild_id = $1",
-            self.guild_id,
-        )
+    try:
+        return commands
+    except Exception as e:
+        print(e)
+        return False
 
-        for c in commands_db:
-            commands.append((c[0], c[1], c[2]))
 
+async def command_add(
+    name: str, description: str, guild_id: int, db: asyncpg.Connection, image=None
+):
+    """Add a command to the database.
+
+    Args:
+        name (str): The command's name or denominator
+        description (str): The command's description
+        guild_id (int): The Guild's ID
+        db (asyncpg.Connection): Database Connection
+        image (str, optional): A link to an image to display
+    """
+
+    async with db.transaction():
         try:
-            return commands
-        except:
-            return None
-
-    async def add_command(self, name: str, description: str, image=None):
-        """Adds a command to the database.
-
-        Args:
-            name (str): The name or denominator for the command.
-            description (str): The description or text displayed when the command is called.
-            image (str, optional): A link to an image to embed. Defaults to None.
-        """
-
-        async with self.db.transaction():
-            try:
-                await self.db.execute(
-                    "INSERT INTO custom_commands VALUES ($1, $2, $3, $4)",
-                    self.guild_id,
-                    name,
-                    description,
-                    image,
-                )
-
-            except Exception as e:
-                print(e)
-
-    async def remove_command(self, command: str):
-        """Removes a command from the database.
-
-        Args:
-            command (str): The name or denominator for the command.
-        """
-
-        async with self.db.transaction():
-            try:
-                await self.db.execute(
-                    "DELETE FROM custom_commands WHERE guild_id = $1 AND command = $2",
-                    self.guild_id,
-                    command,
-                )
-
-            except Exception as e:
-                print(e)
-
-    async def fetch_command(self, command):
-        return await self.db.fetchrow(
-            "SELECT command, output, image FROM custom_commands WHERE guild_id = $1 AND command = $2",
-            self.guild_id,
-            command,
-        )
-
-    async def delete_all_programs(self, user_id):
-        await self.db.execute(
-            "DELETE FROM programs WHERE guild_id = $1 AND user_id = $2",
-            self.guild_id,
-            user_id,
-        )
-
-    async def update_programs(self, user_id, message):
-        await self.db.execute(
-            "UPDATE programs SET description = $1 WHERE guild_id = $2 AND user_id = $3",
-            message,
-            self.guild_id,
-            user_id,
-        )
-
-
-class Guild_DB:
-    """The Guild_Info class.  Provides all of the functions required for dealing with the Borg database."""
-
-    @classmethod
-    async def init(cls, guild_id: int):
-        """Initalizes self.guild_id & a database connection."""
-        self = Guild_DB()
-
-        self.guild_id = guild_id
-
-        # Grab a database connection
-        self.db = await database_connection()
-
-        return self
-
-    async def update_welcome(self, settings: dict):
-
-        check = await self.db.fetchrow(
-            "SELECT EXISTS(SELECT guild_id FROM welcome WHERE guild_id = $1)",
-            self.guild_id,
-        )
-
-        if check[0]:
-            await self.db.execute(
-                "UPDATE welcome SET channel = $1, message = $2, enabled = $3 WHERE guild_id = $4",
-                settings["channel"],
-                settings["message"],
-                settings["enabled"],
-                self.guild_id,
+            await db.execute(
+                "INSERT INTO custom_commands VALUES ($1, $2, $3, $4)",
+                guild_id,
+                name,
+                description,
+                image,
             )
 
-        else:
-            await self.db.execute(
-                "INSERT INTO welcome VALUES($1, $2, $3, $4)",
-                self.guild_id,
-                settings["channel"],
-                settings["message"],
-                settings["enabled"],
+        except Exception as e:
+            print(e)
+
+
+async def command_remove(command: str, guild_id: int, db: asyncpg.Connection):
+    """Removes a command from the database.
+
+    Args:
+        command (str): The command's denominator
+        guild_id (int): The Guild's ID
+        db (asyncpg.Connection): Database Connection
+    """
+
+    async with db.transaction():
+        try:
+            await db.execute(
+                "DELETE FROM custom_commands WHERE guild_id = $1 AND command = $2",
+                guild_id,
+                command,
             )
 
-    async def grab_settings(self) -> dict:
-        """Fetches the server's settings.
+        except Exception as e:
+            print(e)
 
-        Returns:
-            dict or None: Returns None if there are no settings or the server's settings in a dictionary:
-                {
-                    'programs_channel': int, # The programs channel ID
-                    'course_default_school': int # The default school for course selection for this server.
-                }
-        """
 
-        grab_info = await self.db.fetchrow(
-            "SELECT * FROM settings WHERE guild_id = $1", self.guild_id
+async def command_fetch(command: str, guild_id: int, db: asyncpg.Connection):
+    """Fetch a command from the database
+
+    Args:
+        command (str): The command's denominator
+        guild_id (int): The Guild's ID
+        db (asyncpg.Connection): Database Connection
+
+    Returns:
+        asyncpg.Record:
+            (
+                command (str): The command's denominator
+                output (str): The command's output
+                image (str or None): Potentially an image to embed
+            )
+    """
+    return await db.fetchrow(
+        "SELECT command, output, image FROM custom_commands WHERE guild_id = $1 AND command = $2",
+        guild_id,
+        command,
+    )
+
+
+async def welcome_update(guild_id: int, settings: dict, db: asyncpg.Connection):
+    """Update the welcome settings for a guild
+
+    Args:
+        guild_id (int): The Guild's ID
+        settings (dict): The new settings in the form of: {'channel': int, 'message': str, 'enabled': bool}
+        db (asyncpg.Connection): Database Connection
+    """
+
+    # Check to see if there is already a welcome instance for this guild
+    check = await db.fetchrow(
+        "SELECT EXISTS(SELECT guild_id FROM welcome WHERE guild_id = $1)",
+        guild_id,
+    )
+
+    if check[0]:
+        await db.execute(
+            "UPDATE welcome SET channel = $1, message = $2, enabled = $3 WHERE guild_id = $4",
+            settings["channel"],
+            settings["message"],
+            settings["enabled"],
+            guild_id,
         )
 
-        if grab_info:
-            settings = {
-                "programs_channel": grab_info[1],
-                "course_default_school": grab_info[2],
+    else:
+        await db.execute(
+            "INSERT INTO welcome VALUES($1, $2, $3, $4)",
+            guild_id,
+            settings["channel"],
+            settings["message"],
+            settings["enabled"],
+        )
+
+
+async def welcome_grab(guild_id: int, db: asyncpg.Connection):
+    """Fetches a server's welcome settings
+
+    Args:
+       guild_id (int): The Guild's ID
+       db (asyncpg.Connection): Database Connection
+
+    Returns:
+        dict or None: Returns None if there are no settings or the welcome settings in a dictionary:
+            {
+                'channel': int, # The channel ID where welcome messages are provided.
+                'message': str, # The message to welcome a user
+                'enabled': bool # Whether welcome messages are enabled.
             }
-            return settings
-        else:
-            return None
+    """
 
-    async def update_settings(self, setting, newvalue):
-        await self.db.execute(
-            "UPDATE settings SET $1 = $2 WHERE guild_id = $3",
-            setting,
-            newvalue,
-            self.guild_id,
-        )
+    data_pull = await db.fetchrow("SELECT * FROM welcome WHERE guild_id = $1", guild_id)
 
-    async def grab_welcome(self) -> dict:
-        """Fetches a server's welcome settings.
+    if data_pull[1] and data_pull[2] and data_pull[3]:
+        welcome = {
+            "channel": data_pull[1],
+            "message": data_pull[2],
+            "enabled": data_pull[3],
+        }
+        return welcome
+    else:
+        return None
 
-        Returns:
-            dict or None: Returns None if there are no settings or the welcome settings in a dictionary:
-                {
-                    'channel': int, # The channel ID where welcome messages are provided.
-                    'message': str, # The message to welcome a user
-                    'enabled': bool # Whether welcome messages are enabled.
-                }
-        """
 
-        data_pull = await self.db.fetchrow(
-            "SELECT * FROM welcome WHERE guild_id = $1", self.guild_id
-        )
+async def settings_grab(guild_id: int, db: asyncpg.Connection):
+    """Fetches the server's settings
 
+    Args:
+        guild_id (int): The Guild's ID
+        db (asyncpg.Connection): Database Connection
+
+    Returns:
+        None or dict:
+            (
+                "programs_channel": int, # The program's verification channel ID
+                "course_default_school": str # The default school for course selection
+            )
+    """
+
+    grab_info = await db.fetchrow(
+        "SELECT * FROM settings WHERE guild_id = $1", guild_id
+    )
+
+    if grab_info:
+        settings = {
+            "programs_channel": grab_info[1],
+            "course_default_school": grab_info[2],
+        }
+        return settings
+    else:
+        return None
+
+
+async def settings_update(
+    guild_id: int, setting: str, new_value, db: asyncpg.Connection
+):
+    """Update a specific setting
+
+    Args:
+        guild_id (int): The Guild's ID
+        setting (str): The setting to change
+        new_value: The setting's new value
+        db (asyncpg.Connection): Database Connection
+    """
+    await db.execute(
+        "UPDATE settings SET $1 = $2 WHERE guild_id = $3",
+        setting,
+        new_value,
+        guild_id,
+    )
+
+
+async def settings_create_default(guild_id: int, db: asyncpg.Connection):
+    """Creates the default settings values for a guild
+
+    Args:
+        guild_id (int): The Guild's ID
+        db (asyncpg.Connection): Database Connection
+    """
+
+    async with db.transaction():
         try:
-            welcome = {
-                "channel": data_pull[1],
-                "message": data_pull[2],
-                "enabled": data_pull[3],
-            }
-            return welcome
-        except:
-            return None
+            await db.execute(
+                "INSERT INTO settings(guild_id, programs_channel, courses_default_school) VALUES ($1, $2, $3)",
+                guild_id,
+                None,
+                None,
+            )
 
-    async def create_default_settings(self):
-        """Creates the default settings value for a guild."""
-
-        async with self.db.transaction():
-            try:
-                await self.db.execute(
-                    "INSERT INTO settings(guild_id, programs_channel, courses_default_school) VALUES ($1, $2, $3)",
-                    self.guild_id,
-                    None,
-                    None,
-                )
-
-            except Exception as e:
-                print(e)
+        except Exception as e:
+            print(e)

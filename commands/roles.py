@@ -1,5 +1,12 @@
 import discord.ext
-from methods.database import Roles_DB
+from methods.database import (
+    database_connection,
+    role_grab,
+    role_check,
+    role_add,
+    role_find,
+    role_remove,
+)
 from methods.embed import create_embed, add_field, create_embed_template
 from methods.paged_command import page_command
 from typing import Tuple
@@ -21,10 +28,10 @@ async def role_toggle(
     # Grab the user's roles
     user_roles = [i.id for i in ctx.author.roles]
 
-    db = await Roles_DB.init(ctx.guild.id)
+    db = await database_connection()
 
     # Grab this server's role commands
-    role_id = await db.grab_role(command=role)
+    role_id = await role_grab(ctx.guild.id, db)
 
     if role_id is None:
         return (
@@ -90,12 +97,12 @@ async def roles(
         Union(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
     """
 
-    db = await Roles_DB.init(ctx.guild.id)
+    db = await database_connection()
 
     try:
         all_roles = [
             f"!role {i[1]} - {ctx.guild.get_role(i[0]).mention}"
-            for i in await db.grab_roles()
+            for i in await role_grab(ctx.guild.id, db)
         ]
     except:
         return (
@@ -140,9 +147,9 @@ async def add_role(ctx: discord.ext.commands.Context, name: str, role_id: int):
             ),
         )
 
-    db = await Roles_DB.init(ctx.guild.id)
+    db = await database_connection()
 
-    if await db.check_role(role_id, name):
+    if await role_check(ctx.guild.id, role_id, name, db):
         for role in ctx.guild.roles:
             if role.name == "Borg" or role.name == "Borg Test":
                 borg_role = {"id": role.id, "position": role.position}
@@ -150,7 +157,7 @@ async def add_role(ctx: discord.ext.commands.Context, name: str, role_id: int):
         actual_role = ctx.guild.get_role(role_id)
 
         if borg_role["position"] > actual_role.position:
-            await db.add_role(role_id, name)
+            await role_add(ctx.guild.id, role_id, name, db)
 
             embed = create_embed("Role Added", "", "light_green")
             add_field(embed, "Role", actual_role.mention, True)
@@ -197,9 +204,9 @@ async def remove_role(ctx, role_id: int):
             ),
         )
 
-    db = await Roles_DB.init(ctx.guild.id)
+    db = await database_connection()
 
-    removal_role = await db.grab_role(role_id=role_id)
+    removal_role = await role_find(ctx.guild.id, role_id=role_id)
 
     if removal_role is None:
         return (
@@ -211,7 +218,7 @@ async def remove_role(ctx, role_id: int):
             ),
         )
 
-    await db.remove_role(role_id)
+    await role_remove(ctx.guild.id, role_id, db)
 
     embed = create_embed("Role Removed", "", "dark_blue")
 

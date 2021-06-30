@@ -1,10 +1,9 @@
-import discord
 from discord.ext import commands
-from discord_slash import cog_ext, SlashContext
+from discord_slash import cog_ext
 from discord_slash.utils.manage_commands import create_option
 from commands.roles import role_toggle, roles, add_role, remove_role
 from methods.embed import create_embed_template
-from methods.database import Roles_DB
+from methods.database import database_connection, role_find
 
 
 class SlashRoles(commands.Cog):
@@ -27,7 +26,7 @@ class SlashRoles(commands.Cog):
     async def _roles_role(self, ctx, role):
         """/roles role"""
         result = await role_toggle(ctx, role.lower())
-        print(result)
+
         if result is not True:
             await ctx.send(embed=result[1], hidden=True)
 
@@ -105,9 +104,9 @@ class SlashRoles(commands.Cog):
         if role_name is not None:
             if role_name[0] == "!":
                 role_name = role[1::]
-            actual_role = await (await Roles_DB.init(ctx.guild.id)).grab_role(
-                command=role_name
-            )
+
+            db = await database_connection()
+            actual_role = await role_find(ctx.guild.id, db, command=role_name)
             actual_role = actual_role["role_id"]
 
             if actual_role is None:

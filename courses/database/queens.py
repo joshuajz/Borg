@@ -1,7 +1,10 @@
 import json
 import requests
-from methods.database import Courses_DB
-
+from methods.database import (
+    database_connection,
+    course_add,
+    course_fetch_school,
+)
 
 base = "https://api.qmulus.io/v1/courses/"
 
@@ -21,14 +24,14 @@ async def get_info(offset=0):
 
 
 async def pull_values():
-    db = await Courses_DB.init("queens")
+    db = await database_connection()
 
-    courses = await db.fetch_courses()
+    courses = await course_fetch_school("queens", db)
 
     offset = 0
     while True:
         info = await get_info(offset)
-        if info != False and len(info) != 0:
+        if info is not False and len(info) != 0:
             await place_info(info, courses, db)
             offset += 100
         else:
@@ -63,7 +66,9 @@ async def place_info(items: list, in_database, db):
         if course_id in in_database:
             continue
 
-        await db.add_course(
+        await course_add(
+            db,
+            "queens",
             course_id,
             int(course_code),
             item["department"],

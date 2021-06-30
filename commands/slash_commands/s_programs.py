@@ -1,5 +1,5 @@
 from discord.ext import commands
-from discord_slash import cog_ext, SlashContext
+from discord_slash import cog_ext
 from discord_slash.utils.manage_commands import create_option
 from methods.data import parse_channel
 from commands.programs import (

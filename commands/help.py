@@ -1,6 +1,5 @@
 import discord.ext
 from methods.embed import create_embed, add_field
-import asyncio
 from methods.paged_command import send_page_command
 
 

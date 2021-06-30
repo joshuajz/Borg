@@ -1,6 +1,6 @@
 import discord.ext
 from urlextract import URLExtract
-from methods.database import Commands_DB
+from methods.database import database_connection, commands_grab, command_fetch
 from typing import Tuple
 from methods.embed import create_embed, create_embed_template
 from methods.paged_command import page_command
@@ -21,10 +21,10 @@ async def custom_command_list(
     """
 
     # Database
-    db = await Commands_DB.init(ctx.guild.id)
+    db = await database_connection()
 
     # List of commands
-    grab_commands = await db.grab_commands()
+    grab_commands = await commands_grab(ctx.guild.id, db)
 
     if grab_commands is None:
         return (
@@ -82,22 +82,23 @@ async def custom_command_add(
             ),
         )
 
+    photo_indicators = (
+        "tenor",
+        "jpeg",
+        "jpg",
+        "png",
+        "gif",
+        "webp",
+        "giphy",
+        "tiff",
+        "nef",
+        "cr2",
+        "arw",
+    )
+
     urls = []
     if image:
         # Checks for an actual photo in "image"
-        photo_indicators = (
-            "tenor",
-            "jpeg",
-            "jpg",
-            "png",
-            "gif",
-            "webp",
-            "giphy",
-            "tiff",
-            "nef",
-            "cr2",
-            "arw",
-        )
 
         # Extracts the urls from the "image" variable
         urls = URLExtract().find_urls(image)
@@ -123,13 +124,11 @@ async def custom_command_add(
                 "Too many Links", "Borg can only support 1 image per command.", "error"
             ),
         )
-    else:
-        urls = None
 
-    db = await Commands_DB.init(ctx.guild.id)
+    db = await database_connection()
 
     # Find all of the current commands
-    grab_commands = await db.grab_commands()
+    grab_commands = await commands_grab(ctx.guild.id, db)
 
     if grab_commands is not None:
         command_list = [i[0] for i in grab_commands]
@@ -182,14 +181,14 @@ async def custom_command_remove(
             ),
         )
 
-    db = await Commands_DB.init(ctx.guild.id)
+    db = await database_connection()
 
     # Removes the ! from the command -> !hello turns into hello
     if command[0] == "!":
         command = command[1::]
 
     # Grabs all of the commands
-    grab_commands = await db.grab_commands()
+    grab_commands = await commands_grab(ctx.guild.id, db)
     if grab_commands is None:
         return (
             False,
@@ -204,7 +203,7 @@ async def custom_command_remove(
 
     if command in command_list:
         # Grabs the info for the command to be deleted
-        command_delete = await db.fetch_command(command)
+        command_delete = await command_fetch(command, ctx.guild.id, db)
 
         # Deletes
         await db.remove_command(command)
@@ -234,10 +233,10 @@ async def custom_command_handling(ctx: discord.ext.commands.Context, command: st
         command (str): The command that was called
     """
 
-    db = await Commands_DB.init(ctx.guild.id)
+    db = await database_connection()
 
     # List of commands
-    command_list = await db.grab_commands()
+    command_list = await commands_grab(ctx.guild.id, db)
 
     if command_list is None:
         return

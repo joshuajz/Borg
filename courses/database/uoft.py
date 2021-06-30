@@ -1,7 +1,7 @@
 import json
 import requests
 import re
-from methods.database import Courses_DB
+from methods.database import database_connection, course_fetch_school, course_add
 
 base = "https://nikel.ml/api/courses"
 
@@ -18,12 +18,12 @@ async def get_info(offset=0):
 
 
 async def pull_values():
-    db = await Courses_DB.init("uoft")
+    db = await database_connection()
 
     offset = 0
     while True:
         info = await get_info(offset)
-        if info != False and len(info) != 0:
+        if info is not False and len(info) != 0:
             await place_info(info, db)
             offset += 100
         else:
@@ -47,10 +47,11 @@ async def place_info(courses: list, db):
     def split_code(code):
         r = re.compile("([a-zA-Z]+)([0-9]+)")
         m = r.match(code)
-        return (code, m.group(1), m.group(2), code[-2::])
+        return code, m.group(1), m.group(2), code[-2::]
 
     def get_campus(code):
         end = code[-2::]
+
         if end[0] == "H":
             academic_units = 3
         else:
@@ -62,9 +63,10 @@ async def place_info(courses: list, db):
             campus = "UTSC"
         elif end[1] == "5":
             campus = "UTM"
+
         return academic_units, campus
 
-    in_database = await db.fetch_courses()
+    in_database = await course_fetch_school("uoft", db)
 
     for course in courses:
         code = course["code"]
@@ -98,7 +100,9 @@ async def place_info(courses: list, db):
                 f"**Recommended Preparation**: {course['recommended_preparation']}\n"
             )
 
-        await db.add_course(
+        await course_add(
+            db,
+            "uoft",
             code,
             int(course_info[2]),
             course_info[1],

@@ -1,5 +1,12 @@
 import discord.ext
-from methods.database import Programs_DB, Guild_DB
+from methods.database import (
+    database_connection,
+    settings_grab,
+    program_delete,
+    program_grab,
+    program_update,
+    settings_update,
+)
 from methods.embed import create_embed, add_field, create_embed_template
 from methods.data import parse_id
 from typing import Tuple
@@ -23,10 +30,10 @@ async def programs_add(
         Tuple(bool, discord.Embed): [Status: bool, Embed: discord.Embed]
     """
 
-    db_guild = await Guild_DB.init(ctx.guild.id)
+    db = await database_connection()
 
     # Channel for verification
-    settings = await db_guild.grab_settings()
+    settings = await settings_grab(ctx.guild.id, db)
 
     if settings is None or settings["programs_channel"] is None:
         return (
@@ -105,11 +112,11 @@ async def programs_remove(
     else:
         user_id = ctx.author.id
 
-    db = await Programs_DB.init(ctx.guild.id)
+    db = await database_connection()
 
     # Deletes ALL the programs
     if programs.lower() in ["*", "all"]:
-        await db.delete_all_programs(user_id)
+        await program_delete(ctx.guild.id, user_id, db)
 
         return (
             True,
@@ -125,7 +132,7 @@ async def programs_remove(
     remove_programs = list(dict.fromkeys(remove_programs))
     try:
         remove_programs = [int(i) for i in remove_programs]
-    except:
+    except ValueError:
         return (
             False,
             create_embed_template(
@@ -138,7 +145,7 @@ async def programs_remove(
     # All programs
     all_programs = {}
     i = 1
-    for program in (await db.grab_programs(user_id)).split("\n"):
+    for program in (await program_grab(user_id, ctx.guild.id, db)).split("\n"):
         all_programs[i] = program
         i += 1
 
@@ -165,7 +172,7 @@ async def programs_remove(
     for program in range(len_programs):
         message += new_programs[program] + ("\n" if program != len_programs - 1 else "")
 
-    await db.update_programs(user_id, message)
+    await program_update(ctx.guild.id, user_id, message, db)
 
     return (
         True,
@@ -217,7 +224,7 @@ async def programs_edit(
 
     try:
         before = int(before)
-    except:
+    except ValueError:
         return (
             False,
             create_embed_template(
@@ -229,11 +236,10 @@ async def programs_edit(
 
     user = parse_id(user)
 
-    db = await Programs_DB.init(ctx.guild.id)
-    db_guild = await Guild_DB.init(ctx.guild.id)
+    db = await database_connection()
 
     # Channel for verification
-    settings = await db_guild.grab_settings()
+    settings = await settings_grab(ctx.guild.id, db)
     if settings is None or settings["programs_channel"] is None:
         return (
             False,
@@ -246,7 +252,7 @@ async def programs_edit(
 
     programs_channel = settings["programs_channel"]
 
-    programs = (await db.grab_programs(user)).split("\n")
+    programs = (await program_grab(user, ctx.guild.id, db)).split("\n")
 
     # Entire programs list
     p = {}
@@ -309,10 +315,10 @@ async def programs(ctx, bot, user: str) -> Tuple[bool, discord.Embed]:
     # Gets the user's id
     user = parse_id(user)
 
-    db = await Programs_DB.init(ctx.guild.id)
+    db = await database_connection()
 
     # Grabs all of the programs
-    programs_list = await db.grab_programs(user)
+    programs_list = await program_grab(user, ctx.guild.id, db)
 
     # Empty list
     if programs_list is None:
@@ -361,13 +367,19 @@ async def programs_setup(
     """
 
     if ctx.author.guild_permissions.administrator is False:
-        return
+        return False, create_embed_template(
+            "Invalid Permissions",
+            "You do not have permission to setup programs.",
+            "error",
+        )
 
     if not channel:
-        return False, "Invalid channel."
+        return False, create_embed_template(
+            "Invalid Channel", "You provided an invalid channel.", "error"
+        )
 
-    db = await Guild_DB.init(ctx.guild.id)
-    await db.update_settings("programs_channel", channel)
+    db = await database_connection()
+    await settings_update(ctx.guild.id, "programs_channel", channel, db)
 
     return True, create_embed(
         f"Programs Setup Successfully.", f"Channel: <#{channel}>", "light_green"
@@ -387,21 +399,20 @@ async def programs_reaction_handling(
         bool: If it was a programs related reaction
     """
 
-    db = await Programs_DB.init(ctx.guild_id)
-    db_guild = await Guild_DB.init(ctx.guild_id)
+    db = await database_connection()
 
     # Grabs the verification channel
-    settings = await db_guild.grab_settings()
+    settings = await settings_grab(ctx.guild_id, db)
     if settings is None or settings["programs_channel"] is None:
         return False
 
     mod_channel_id = settings["programs_channel"]
 
-    if mod_channel_id != ctx.channel.id:
+    if mod_channel_id != ctx.channel_id:
         return False
 
     # Grabs the message & embeds
-    m = await client.get_channel(ctx.channel.id).fetch_message(ctx.message.id)
+    m = await client.get_channel(ctx.channel_id).fetch_message(ctx.message_id)
     embeds = m.embeds[0]
 
     reactions = m.reactions
@@ -429,7 +440,9 @@ async def programs_reaction_handling(
             # Checks to see if the user already has a programs list
 
             # If they don't
-            count = await db.check_programs_exists(user_id)
+            count = await db.programs_check_exist(
+                user_id,
+            )
 
             if count != 1:
                 # Delete the message
@@ -452,7 +465,7 @@ async def programs_reaction_handling(
                     return False
 
                 # Grabs the current programs
-                current_programs = await db.grab_programs(user_id)
+                current_programs = await program_grab(user_id, ctx.guild_id, db)
 
                 current_programs += "\n"
 
@@ -465,7 +478,7 @@ async def programs_reaction_handling(
                     )
 
                 # Updates the database to the newer longer version
-                await db.update_programs(user_id, current_programs)
+                await program_update(ctx.guild_id, user_id, current_programs, db)
 
                 # Grabs the user & makes a DM channel
                 user = client.get_user(user_id)
@@ -482,7 +495,7 @@ async def programs_reaction_handling(
 
                 try:
                     await dm_channel.send(embed=embed)
-                except:
+                except Exception as e:
                     return True
 
                 return True
@@ -511,7 +524,7 @@ async def programs_reaction_handling(
                 return True
 
             # Grabs current programs
-            current_programs = await db.grab_programs(user_id)
+            current_programs = await program_grab(user_id, ctx.guild_id, db)
 
             # All programs into a dictionary
             programs = {}
@@ -532,7 +545,7 @@ async def programs_reaction_handling(
                 final_programs += p_values[i] + ("\n" if i + 1 != len_p_values else "")
 
             # Update in the databse
-            await db.update_programs(user_id, final_programs)
+            await program_update(ctx.guild_id, user_id, final_programs, db)
 
             # Open a DM
             user = client.get_user(user_id)

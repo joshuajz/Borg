@@ -2,7 +2,7 @@ import json
 import requests
 import os
 from dotenv import dotenv_values
-from methods.database import Courses_DB
+from methods.database import database_connection, course_fetch_school, course_add
 
 cwd = os.getcwd().split("/")
 
@@ -63,7 +63,7 @@ async def get_course(course, term=get_term()):
 
 async def pull_values():
     courses = await get_courses()
-    db = await Courses_DB.init("waterloo")
+    db = await database_connection()
 
     def pull_numbers(string):
         final = ""
@@ -72,7 +72,7 @@ async def pull_values():
                 final += s
         return final
 
-    in_database = await db.fetch_courses()
+    in_database = await course_fetch_school("waterloo", db)
 
     for course in courses:
         campus = None
@@ -100,7 +100,9 @@ async def pull_values():
         if course_code in in_database:
             continue
 
-        await db.add_course(
+        await course_add(
+            db,
+            "waterloo",
             course_code,
             course_number,
             course["subjectCode"],

@@ -1,14 +1,13 @@
-import discord
-from methods.database import Guild_DB
+from methods.database import database_connection, welcome_grab, welcome_update
 from methods.embed import create_embed, add_field
 
 
 async def welcome_handling(ctx, client):
     """Handles welcoming new users."""
-    db = await Guild_DB.init(ctx.guild.id)
+    db = await database_connection()
 
     # Grabs this server's info
-    welcome_info = await db.grab_welcome()
+    welcome_info = await welcome_grab(ctx.guild.id, db)
 
     # Returns if there isn't any
     if len(welcome_info) != 3:
@@ -31,11 +30,11 @@ async def welcome_setup(ctx, channel: int, description: str):
     if ctx.author.guild_permissions.administrator is False:
         return
 
-    db = await Guild_DB.init(ctx.guild.id)
+    db = await database_connection()
 
     # Updates the DB
-    await db.update_welcome(
-        {"channel": channel, "message": description, "enabled": True}
+    await welcome_update(
+        ctx.guild.id, {"channel": channel, "message": description, "enabled": True}, db
     )
 
     # Send status message
@@ -49,9 +48,9 @@ async def welcome_toggle(ctx):
     if ctx.author.guild_permissions.administrator is False:
         return
 
-    db = await Guild_DB.init(ctx.guild.id)
+    db = await database_connection()
 
-    welcome_info = await db.grab_welcome()
+    welcome_info = await welcome_grab(ctx.guild.id, db)
 
     if welcome_info["enabled"] is False:
         embed = create_embed("Welcome Message Enabled", "", "light_green")
@@ -60,6 +59,6 @@ async def welcome_toggle(ctx):
         embed = create_embed("Welcome Message Disabled", "", "red")
         welcome_info["enabled"] = False
 
-    await db.update_welcome(welcome_info)
+    await welcome_update(ctx.guild.id, welcome_info, db)
 
     await ctx.channel.send(embed=embed, hidden=True)

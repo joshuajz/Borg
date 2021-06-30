@@ -3,7 +3,11 @@ import os
 from dotenv import load_dotenv
 from discord.ext import commands
 from discord_slash import SlashCommand
-from methods.database import create_database, Guild_DB
+from methods.database import (
+    create_database,
+    database_connection,
+    settings_create_default,
+)
 from commands.commands import custom_command_handling
 from commands.programs import programs_reaction_handling
 from commands.welcome import welcome_handling
@@ -42,17 +46,17 @@ async def on_ready():
         return
 
     # Pull all of the courses into the database
-    # await pull_courses(bot)
+    bot.loop.create_task(pull_courses(bot))
 
     # Default Settings Check
     guilds_on = [guild.id for guild in bot.guilds]
-    database = await Guild_DB.init(0)
-    guilds_db = await database.db.fetch("SELECT guild_id FROM settings")
+    db = await database_connection()
+    guilds_db = await db.fetch("SELECT guild_id FROM settings")
     guilds_db = [i[0] for i in guilds_db]
 
     for guild in guilds_on:
         if guild not in guilds_db:
-            await (await Guild_DB.init(guild)).create_default_settings()
+            await settings_create_default(guild, db)
 
     print(f"Logged in as {bot.user}.")
 
@@ -110,7 +114,7 @@ async def on_member_join(member: discord.Member):
 async def on_guild_join(guild: discord.Guild):
     """When the bot joins a guild."""
 
-    await (await Guild_DB.init(guild.id)).create_default_settings()
+    await settings_create_default(guild.id, await database_connection())
 
 
 # Load the various commands
